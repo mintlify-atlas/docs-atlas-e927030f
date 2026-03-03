@@ -1,0 +1,129 @@
+{
+  "projectType": "infrastructure",
+  "projectName": "SmartSpin2k",
+  "projectDescription": "Transform your spin bike into a smart trainer with automatic resistance control for Zwift and other cycling apps.",
+  "theme": "aspen",
+  "primaryColor": "#1a73e8",
+  "lightColor": "#4285f4",
+  "darkColor": "#0d47a1",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "features",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Hardware",
+            "pages": [
+              "hardware/overview",
+              "hardware/v3-integrated-pcb",
+              "hardware/v2-through-hole",
+              "hardware/components",
+              "hardware/3d-printing",
+              "hardware/bike-compatibility"
+            ]
+          },
+          {
+            "group": "Building",
+            "pages": [
+              "building/assembly-guide",
+              "building/wiring",
+              "building/mounting",
+              "building/calibration"
+            ]
+          },
+          {
+            "group": "Firmware",
+            "pages": [
+              "firmware/installation",
+              "firmware/configuration",
+              "firmware/ota-updates",
+              "firmware/development"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "usage/connecting-to-zwift",
+              "usage/erg-mode",
+              "usage/power-calibration",
+              "usage/web-interface",
+              "usage/mobile-app"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/common-issues",
+              "troubleshooting/bluetooth",
+              "troubleshooting/hardware",
+              "troubleshooting/stepper-motor"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "BLE Services",
+            "pages": [
+              "api/ble-overview",
+              "api/custom-characteristic",
+              "api/ftms-service",
+              "api/cycling-power-service",
+              "api/csc-service"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "api/settings",
+              "api/power-table",
+              "api/erg-configuration"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "api/contributing",
+              "api/building-from-source",
+              "api/testing"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Automatic resistance control for spin bikes",
+    "ERG mode for power-based training",
+    "BLE connectivity with FTMS, Cycling Power, and CSC services",
+    "Compatible with Zwift, TrainerRoad, and other cycling apps",
+    "Power calibration and correction system",
+    "Web-based configuration interface",
+    "OTA firmware updates",
+    "Custom BLE characteristics for remote control",
+    "3D-printable hardware for multiple bike models",
+    "Companion mobile app for iOS and Android"
+  ],
+  "publicApiSurface": [
+    "FTMS (Fitness Machine Service) - Standard BLE service for trainer control",
+    "Cycling Power Service - BLE service for power measurement",
+    "Cycling Speed and Cadence Service - BLE service for speed/cadence data",
+    "Custom Characteristic (UUID: 77776277-7877-7774-4466-896665500001) - Direct parameter control",
+    "Web Configuration Interface - HTML/JavaScript interface on port 80",
+    "HTTP REST endpoints for settings and status",
+    "WebSocket API for real-time logging and monitoring",
+    "Power Table API - Calibration data management",
+    "ERG Mode Control - Power-based resistance management",
+    "OTA Update Service - Firmware update over HTTP"
+  ]
+}
