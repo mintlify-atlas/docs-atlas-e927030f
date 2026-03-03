@@ -39,15 +39,27 @@ SmartSpin2k exposes the following standard and custom BLE services:
   </Card>
 </CardGroup>
 
-### Custom Services
+### Custom and App-Specific Services
 
-<Card title="SmartSpin2k Custom Characteristic" icon="gear" href="/api/custom-characteristic">
-  Service UUID: `77776277-7877-7774-4466-896665500000`
+<CardGroup cols={2}>
+  <Card title="SmartSpin2k Custom Characteristic" icon="gear" href="/api/custom-characteristic">
+    Service UUID: `77776277-7877-7774-4466-896665500000`
+    
+    Proprietary protocol for reading and writing device configuration parameters.
+  </Card>
   
-  Characteristic UUID: `77776277-7877-7774-4466-896665500001`
+  <Card title="Wattbike Service" icon="w">
+    Service UUID: `b4cc1223-bc02-4cae-adb9-1217ad2860d1`
+    
+    Provides gear position notifications for Wattbike app compatibility.
+  </Card>
   
-  Proprietary protocol for reading and writing device configuration parameters.
-</Card>
+  <Card title="SB20 Service" icon="s">
+    Service UUID: `0c46beaf-9c22-48ff-ae0e-c6eae1a2f4e5`
+    
+    Broadcasts gear, cadence, power, and heart rate for SB20 app integration.
+  </Card>
+</CardGroup>
 
 ### Device Information Service
 
@@ -61,6 +73,48 @@ Provides device metadata:
 - Firmware Revision (`0x2A26`)
 - Software Revision (`0x2A28`)
 
+### Wattbike Service Details
+
+**Service UUID**: `b4cc1223-bc02-4cae-adb9-1217ad2860d1`
+
+The Wattbike service provides gear position notifications for compatibility with the Wattbike app:
+
+<ParamField path="WATTBIKE_READ_UUID" type="characteristic" default="b4cc1224-bc02-4cae-adb9-1217ad2860d1">
+  Read/Notify characteristic for gear position updates
+</ParamField>
+
+<ParamField path="WATTBIKE_WRITE_UUID" type="characteristic" default="b4cc1225-bc02-4cae-adb9-1217ad2860d1">
+  Write characteristic for receiving commands
+</ParamField>
+
+**Behavior:**
+- Notifies on gear changes (shifter position updates)
+- Periodic notification every 30 seconds even if gear hasn't changed
+- Gear position constrained to valid range (minimum 1)
+
+### SB20 Service Details
+
+**Service UUID**: `0c46beaf-9c22-48ff-ae0e-c6eae1a2f4e5`  
+**Characteristic UUID**: `0c46beaf-9c22-48ff-ae0e-c6eae1a2f4e6`
+
+The SB20 service broadcasts a data structure compatible with SB20 apps:
+
+```cpp
+struct SB20Data {
+  uint8_t gear;      // Shifter position (1-22)
+  uint8_t cadence;   // Current cadence (RPM)
+  uint16_t power;    // Current power (watts)
+  uint8_t heartrate; // Current heart rate (BPM)
+  uint8_t battery;   // Battery level (always 4 = full)
+};
+```
+
+**Features:**
+- Read/Notify characteristic
+- Gear constrained to 1-22 range
+- Real-time updates of all fitness metrics
+- Battery always reported as full (not battery powered)
+
 ## BLE Client Capabilities
 
 SmartSpin2k can connect to external BLE devices as a client:
@@ -69,6 +123,19 @@ SmartSpin2k can connect to external BLE devices as a client:
 - **Heart Rate Monitors**: Heart Rate Service (`0x180D`)
 - **Speed/Cadence Sensors**: CSC Service (`0x1816`)
 - **Other Trainers**: Fitness Machine Service (`0x1826`)
+- **Echelon Bikes**: Connects to Echelon's proprietary BLE service to read resistance and cadence data
+  - Device UUID: `0bf669f0-45f2-11e7-9598-0800200c9a66`
+  - Service UUID: `0bf669f1-45f2-11e7-9598-0800200c9a66`
+  - Data UUID: `0bf669f4-45f2-11e7-9598-0800200c9a66`
+  - Write UUID: `0bf669f2-45f2-11e7-9598-0800200c9a66`
+- **Flywheel Bikes**: Connects via UART service to read bike data
+  - Service UUID: `6e400001-b5a3-f393-e0a9-e50e24dcca9e`
+  - RX UUID: `6e400002-b5a3-f393-e0a9-e50e24dcca9e`
+  - TX UUID: `6e400003-b5a3-f393-e0a9-e50e24dcca9e`
+  - Device name: "Flywheel 1"
+- **Peloton Bikes**: Serial UART interface via MAX3232 (hardware Rev 2+ only)
+  - Not BLE-based, uses physical serial connection
+  - Reads resistance values directly from bike's serial port
 
 ## Connection Parameters
 
@@ -106,10 +173,22 @@ SmartSpin2k receives data from external sensors (power meters, heart rate monito
 
 The device supports mDNS service advertisement with the following BLE service UUIDs:
 
+**Server Services (Advertised):**
 - `0x1826` - Fitness Machine Service
 - `0x1818` - Cycling Power Service  
 - `0x1816` - Cycling Speed and Cadence Service
+- `0x180D` - Heart Rate Service
 - `77776277-7877-7774-4466-896665500000` - SmartSpin2k Custom Service
+- `b4cc1223-bc02-4cae-adb9-1217ad2860d1` - Wattbike Service
+- `0c46beaf-9c22-48ff-ae0e-c6eae1a2f4e5` - SB20 Service
+
+**Client Services (Can Connect To):**
+- `0x1818` - Cycling Power Service (power meters)
+- `0x180D` - Heart Rate Service (heart rate monitors)
+- `0x1816` - CSC Service (speed/cadence sensors)
+- `0x1826` - FTMS (other trainers)
+- `0bf669f1-45f2-11e7-9598-0800200c9a66` - Echelon bikes
+- `6e400001-b5a3-f393-e0a9-e50e24dcca9e` - Flywheel bikes
 
 ## Implementation Notes
 
