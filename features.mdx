@@ -1,0 +1,439 @@
+---
+title: SmartSpin2k Features
+description: Comprehensive overview of automatic resistance control, ERG mode, power calibration, BLE services, and web-based configuration.
+---
+
+## Automatic Resistance Control
+
+SmartSpin2k's core feature is automatic resistance control through precise stepper motor positioning. The system responds to commands from your training app and adjusts your bike's resistance knob in real-time.
+
+### How It Works
+
+The stepper motor is controlled by a TMC2208/2209 driver with advanced features:
+
+- **Precise positioning**: Tracks exact knob position in steps
+- **StealthChop mode**: Quiet operation during normal riding
+- **Stall detection**: Automatically detects end stops for homing
+- **Temperature monitoring**: Adjusts current if ESP32 gets warm
+
+From `Main.h:36`:
+```cpp
+int32_t targetPosition;   // The position the stepper will move to
+int32_t currentPosition;  // Current stepper position
+
+void moveStepper();       // Main stepper control function
+```
+
+### Resistance Modes
+
+SmartSpin2k supports multiple resistance control modes:
+
+1. **Simulation Mode** - Responds to incline/gradient changes from apps like Zwift
+2. **ERG Mode** - Maintains target power output by adjusting resistance
+3. **Resistance Mode** - Direct resistance level control (0-100%)
+4. **Manual Shifters** - Override control with physical buttons
+
+<Note>
+  The incline multiplier setting (default: 5.0) controls how aggressively resistance changes with gradient. Adjust this in the web interface to match your fitness level.
+</Note>
+
+## ERG Mode (Electronic Resistance Control)
+
+ERG mode is essential for structured training workouts. It maintains a constant power output by automatically adjusting resistance as your cadence changes.
+
+### ERG Mode Operation
+
+From `ERG_Mode.h:17`:
+```cpp
+struct Mode {
+  static const int MAINTAIN   = 0;  // Holding target power
+  static const int DECREASING = 1;  // Reducing resistance
+  static const int INCREASING = 2;  // Increasing resistance
+};
+```
+
+The ERG algorithm:
+- Uses PID control loop for smooth adjustments (as of v25.4.8)
+- Monitors cadence and adjusts resistance to hit target watts
+- Includes feed-forward control for faster response
+- Stops resistance if cadence drops below 30 RPM
+- Resets to minimum resistance if you stop pedaling
+
+### ERG Sensitivity
+
+You can adjust ERG sensitivity in settings to control how aggressively the system responds:
+- **Higher values**: More aggressive resistance changes
+- **Lower values**: Smoother, more gradual adjustments
+
+<Tip>
+  ERG mode works best when combined with a calibrated power table. The system uses your power curve to make intelligent resistance decisions.
+</Tip>
+
+## Power Table Calibration
+
+Most spin bikes have inaccurate or non-existent power meters. SmartSpin2k's power table system creates a calibration curve that maps resistance positions to actual power output.
+
+### How Calibration Works
+
+1. **Connect a reference power meter** (cycling power pedals or crank-based PM)
+2. **Ride normally** while SmartSpin2k records data
+3. **The power table learns** the relationship between resistance position, cadence, and watts
+4. **Accurate power readings** are calculated from the calibration curve
+
+From `Power_Table.h:24`:
+```cpp
+// Pick up new power value and put them into the power table
+void processPowerValue(PowerBuffer& powerBuffer, int cadence, Measurement power);
+
+// returns target position for given cadence and watts
+int32_t lookup(int watts, int cad);
+
+// returns watts for given cadence and target position  
+int32_t lookupWatts(int cad, int32_t targetPosition);
+```
+
+### Power Table Features
+
+- Automatic entry validation and duplicate removal
+- Cubic spline interpolation for smooth curves
+- Cadence compensation (normalizes to 90 RPM)
+- Export/import via web interface or BLE
+- Persistent storage in LittleFS filesystem
+
+<Warning>
+  The power table is reset when you change physical hardware (different resistance knob position, new resistance spring, etc.). You'll need to recalibrate.
+</Warning>
+
+## Bluetooth Low Energy Services
+
+SmartSpin2k acts as a BLE server, broadcasting multiple standard fitness services simultaneously. This allows connection to training apps while also connecting to external sensors.
+
+### BLE Services Provided
+
+From the source code in `src/BLE_*.cpp`:
+
+#### 1. Fitness Machine Service (FTMS)
+- **Indoor Bike Data**: Power, cadence, speed, distance
+- **Training Status**: Workout state, elapsed time
+- **Supported Resistance Range**: Min/max resistance capabilities
+- **Control Point**: Receives commands from training apps
+
+#### 2. Cycling Power Service (CPS)
+- **Power Measurement**: Instantaneous watts
+- **Crank Revolution Data**: Cadence calculation
+- **Sensor Location**: Crank-based power meter emulation
+
+#### 3. Cycling Speed & Cadence (CSC)
+- **Crank Revolutions**: Real-time cadence data
+- **Wheel Revolutions**: Calculated speed (for apps that need it)
+
+#### 4. Heart Rate Service
+- **Pass-through**: Relays HR data from connected monitor
+- **BLE Heart Rate Monitor support**: Connects to any standard HR strap
+
+#### 5. Custom SmartSpin2k Characteristic
+
+A proprietary characteristic for advanced configuration and control.
+
+From `CustomCharacteristic.md:5`:
+```
+SMARTSPIN2K_SERVICE_UUID        "77776277-7877-7774-4466-896665500000"
+SMARTSPIN2K_CHARACTERISTIC_UUID "77776277-7877-7774-4466-896665500001"
+```
+
+Allows reading/writing settings:
+- Stepper parameters (power, speed, position)
+- Simulation modes and values
+- WiFi configuration
+- Real-time logging output
+- External control mode
+
+### BLE Client Connections
+
+SmartSpin2k can also connect TO external BLE devices:
+
+- **Power Meters**: FTMS, Cycling Power, Wahoo, Stages, etc.
+- **Cadence Sensors**: CSC service
+- **Heart Rate Monitors**: Standard HR service
+- **Smart Bikes**: Peloton, Echelon, Flywheel, IC4, etc.
+
+<Note>
+  SmartSpin2k supports up to 6 simultaneous BLE connections - multiple training apps can connect at the same time.
+</Note>
+
+## Web-Based Configuration Interface
+
+SmartSpin2k includes a full web interface for configuration and monitoring, served directly from the ESP32.
+
+### Web Pages
+
+From `data/` directory:
+
+#### Main Dashboard (`index.html`)
+- Device status and connection info
+- Quick access to all configuration pages
+- Firmware version and update status
+
+#### Settings Page (`settings.html`)
+Configurable parameters:
+- **Stepper Settings**: Power (mA), speed, shift step size
+- **Resistance Settings**: Incline multiplier, min/max watts, ERG sensitivity
+- **BLE Settings**: Device name, auto-reconnect
+- **WiFi Settings**: SSID, password, hostname
+- **Update Settings**: Auto-update firmware, update channel
+
+#### Bluetooth Scanner (`bluetoothscanner.html`)
+- Scan for nearby BLE devices
+- Connect power meters, heart rate monitors, cadence sensors
+- View device information and signal strength
+
+#### Status Monitor (`status.html`)
+- Real-time metrics: power, cadence, HR, speed
+- Stepper position and target
+- WebSocket-based live logging
+- Connection status for all devices
+
+#### Shift Control (`shift.html`)
+- Manual resistance control
+- Test stepper movement
+- Emergency stop function
+
+### Configuration Access
+
+1. **WiFi Station Mode**: Connect to your home WiFi
+   - Access at `http://smartspin2k.local`
+   - Or use IP address shown on serial console
+
+2. **Access Point Mode**: Fallback if WiFi fails
+   - SSID: Your configured device name
+   - Password: Your configured password
+   - Access at `http://192.168.4.1`
+
+<Tip>
+  The web interface is mobile-friendly. Configure your SmartSpin2k from your phone while you're on the bike.
+</Tip>
+
+## Firmware Updates (OTA)
+
+Over-The-Air (OTA) updates allow firmware upgrades without USB connection.
+
+### Update Methods
+
+1. **Automatic Updates** (if enabled)
+   - Checks GitHub releases on boot
+   - Downloads and installs latest firmware
+   - Updates both firmware and web interface files
+
+2. **Manual Upload**
+   - Upload `.bin` firmware files via web interface
+   - Upload individual `.html` or `.css` files
+   - Useful for beta testing or custom builds
+
+3. **USB Flash** (via PlatformIO)
+   - For development and recovery
+   - Requires USB cable connection
+
+From `CHANGELOG.md` (v22.10.8):
+> Firmware update will now download only spiffs files if missing without updating the firmware.
+
+<Warning>
+  Hold both shifter buttons during boot to reset to factory defaults and erase settings. Firmware remains intact.
+</Warning>
+
+## Physical Shifter Controls
+
+SmartSpin2k includes physical up/down shifter buttons for manual control.
+
+### Shifter Features
+
+- **Manual resistance adjustment**: Override automatic control
+- **Pass-through shifting**: Adjust resistance in ERG/SIM mode
+- **Emergency control**: Works even if BLE or apps disconnect
+- **Shift step size**: Configurable in settings
+- **Direction reversal**: Software setting to flip button behavior
+
+From `Main.h:22`:
+```cpp
+enum ButtonState {
+  RELEASED,
+  PRESSED
+};
+
+void handleShiftButtons();  // Process shifter input
+```
+
+### Special Shifter Functions
+
+- **Hold both on boot**: Reset to factory defaults
+- **Hold both for 3 seconds**: Trigger BLE device scan
+- **Single press during homing**: Abort homing operation
+
+## Automatic Homing
+
+Homing calibrates the stepper position to known minimum and maximum resistance positions.
+
+### Homing Methods
+
+1. **End Stop Detection** (mechanical homing)
+   - Motor turns until it detects resistance (stall)
+   - Sets minimum and maximum step positions
+   - Ensures motor doesn't exceed physical limits
+
+2. **FTMS Resistance Feedback** (for smart bikes)
+   - Uses reported resistance from connected bike
+   - Maps resistance range to stepper positions
+   - No mechanical contact needed
+
+3. **Calibrate Trainer Command**
+   - Triggered from training apps (Zwift spin-down)
+   - Runs full homing routine
+   - Updates min/max positions
+
+From `Main.h:56`:
+```cpp
+void _findEndStop(bool moveForward);
+void _findFTMSHome(bool bothDirections = false);
+void goHome(bool bothDirections = false);
+```
+
+<Note>
+  Homing is automatically performed on first boot. You can manually trigger it by requesting a calibration in your training app or pressing both shifters for 3 seconds.
+</Note>
+
+## Compatible Bike Support
+
+SmartSpin2k includes specific support for popular smart bikes:
+
+### Supported Bikes via BLE Connection
+
+- **Peloton Bike/Bike+**: Serial decoder for resistance/power data
+- **Echelon Connect**: Resistance capture and pass-through
+- **Schwinn IC4/Bowflex C6**: Full FTMS support
+- **Flywheel**: Power and cadence decoding
+- **Yosuda, Sunny, Stryde**: Generic FTMS support
+- **And 30+ more** with specific hardware adapters
+
+### Hardware Mounting Options
+
+The `Hardware/` directory includes 3D printable mounts for:
+- **Common Assets**: Universal gears, knob cups, inserts
+- **Bike-Specific Mounts**: Custom designs for popular bikes
+- **Direct Mount Mod**: Low-profile mounting for limited space
+- **Ultra Short Mod**: Minimum 40mm clearance designs
+
+<Tip>
+  Can't find your bike? The OpenSCAD parametric designs make it easy to create custom mounts. The community is active in sharing new designs.
+</Tip>
+
+## Developer Features
+
+### Logging & Debugging
+
+Multiple logging outputs:
+- **Serial Console**: USB debugging (115200 baud)
+- **WebSocket**: Live logs in browser (`status.html`)
+- **UDP Logging**: Network streaming to log viewer
+- **BLE Logging**: Stream logs via custom characteristic
+
+From `SS2KLog.h`:
+```cpp
+LOG(LOG_LEVEL_INFO, "Message");      // Info logging
+LOG(LOG_LEVEL_ERROR, "Error");       // Error logging  
+LOG(LOG_LEVEL_DEBUG, "Debug info");  // Debug logging
+```
+
+### Custom Integrations
+
+From `CHANGELOG.md` (v22.10.8):
+> Added StreamFit support and enabled CORS for external integrations
+
+- **REST API**: Control via HTTP requests to `/shift`
+- **WebSockets**: Real-time data streaming
+- **Custom BLE Characteristic**: Direct hardware control
+
+### Build System
+
+From `platformio.ini:10`:
+```ini
+[platformio]
+default_envs = release
+
+[esp32doit]
+platform = espressif32
+board = esp32doit-devkit-v1  
+framework = arduino, espidf
+board_build.filesystem = littlefs
+monitor_speed = 115200
+```
+
+**Dependencies**:
+- ESP-NimBLE-CPP (BLE stack)
+- TMCStepper (stepper driver control)
+- ArduinoJson (configuration storage)
+- FastAccelStepper (smooth motion control)
+- ArduinoWebsockets (live logging)
+
+## Power Correction Factor
+
+If you don't have a reference power meter for full calibration, you can use a simple power correction factor.
+
+- **Range**: 0.5 to 2.5
+- **Default**: 1.0 (no correction)
+- **Use case**: Multiply reported power by this factor
+
+Example: If your bike reads 200W but you know you're producing 220W, set factor to 1.10.
+
+<Note>
+  Power correction is a simple scalar multiplication. For best accuracy, use the full power table calibration instead.
+</Note>
+
+## Advanced Configuration
+
+### External Control Mode
+
+From `CustomCharacteristic.md:77`:
+> BLE_externalControl: Disables internal calculation of targetPosition
+
+Allows external systems to directly control stepper position via BLE, bypassing all internal logic.
+
+### Sync Mode
+
+From `CustomCharacteristic.md:82`:
+> Forces stepperPosition = targetPosition to prevent motor movement during calibration
+
+Useful for setting parameters without moving the motor.
+
+### Simulation Modes
+
+Individually enable/disable simulation for:
+- Power (watts)
+- Cadence (RPM)  
+- Heart rate (BPM)
+- Speed (kph)
+
+When simulation is enabled, SmartSpin2k generates synthetic data instead of reading from sensors.
+
+## Hardware Revisions
+
+SmartSpin2k has evolved through three hardware versions:
+
+### V1 - Archive (Original Design)
+- Breadboard/prototype PCB
+- External stepper driver
+- Universal mounting system
+
+### V2 - Through Hole (Current Recommended)
+- Custom through-hole PCB
+- Integrated TMC2208 driver socket
+- Multiple mounting options
+- Easy to solder for DIY builders
+
+### V3 - Integrated PCB (Latest)
+- SMT components
+- Compact integrated design  
+- Professional appearance
+- Requires reflow soldering
+
+<Tip>
+  V2 through-hole design is recommended for DIY builders. V3 is best for commercial kit production or if you have SMT assembly capabilities.
+</Tip>

@@ -1,0 +1,321 @@
+---
+title: Wiring Guide
+description: Wiring diagrams and electrical connections for SmartSpin2k
+---
+
+This guide covers all electrical connections for SmartSpin2k hardware. Pin assignments vary between hardware revisions, so verify your board version before making connections.
+
+## Hardware Revision Detection
+
+SmartSpin2k automatically detects the hardware revision using pin 34 (REV_PIN). The revision determines the pin configuration:
+
+- **Revision 1**: Voltage reading of 0 on pin 34
+- **Revision 2**: Voltage reading of 4095 (3.3V) on pin 34
+
+Reference: `include/settings.h:133` and `include/boards.h`
+
+<Warning>
+Always verify your board revision before connecting components. Incorrect pin assignments can damage the ESP32 or connected devices.
+</Warning>
+
+## Pin Configuration
+
+### Revision 1 Pin Assignments
+
+| Function | Pin | Description |
+|----------|-----|-------------|
+| Shift Up | 19 | Manual resistance increase button |
+| Shift Down | 18 | Manual resistance decrease button |
+| Enable | 13 | Stepper motor enable (active low) |
+| Step | 25 | Stepper motor step signal |
+| Direction | 33 | Stepper motor direction |
+| Serial RX | 14 | TMC2208/TMC2224 receive |
+| Serial TX | 12 | TMC2208/TMC2224 transmit |
+| LED | 2 | Status indicator LED |
+| REV_PIN | 34 | Hardware revision detection |
+
+Power scaler: 31 (reduces current by divisor 0-31)
+
+Reference: `include/settings.h:135-166`
+
+### Revision 2 Pin Assignments
+
+| Function | Pin | Description |
+|----------|-----|-------------|
+| Shift Up | 26 | Manual resistance increase button |
+| Shift Down | 32 | Manual resistance decrease button |
+| Enable | 27 | Stepper motor enable (active low) |
+| Step | 25 | Stepper motor step signal |
+| Direction | 33 | Stepper motor direction |
+| Serial RX | 18 | TMC2209 receive |
+| Serial TX | 19 | TMC2209 transmit |
+| Aux Serial RX | 22 | Auxiliary serial receive (Peloton) |
+| Aux Serial TX | 21 | Auxiliary serial transmit (Peloton) |
+| LED | 2 | Status indicator LED |
+| REV_PIN | 34 | Hardware revision detection (reads 4095) |
+
+Power scaler: 12 (reduces current by divisor 0-31)
+
+Reference: `include/settings.h:167-204`
+
+## Stepper Motor Driver Wiring
+
+### TMC2208/TMC2224 (Revision 1)
+
+The TMC2208/TMC2224 uses UART for configuration.
+
+<Steps>
+  <Step title="Connect power">
+    - VM: Motor power supply (12-24V)
+    - VDD: Logic power (3.3V from ESP32)
+    - GND: Common ground
+  </Step>
+
+  <Step title="Connect motor phases">
+    - Connect stepper motor coils to A1, A2, B1, B2
+    - Verify correct phase pairing (use multimeter to identify coil pairs)
+    - Incorrect wiring will cause erratic movement
+  </Step>
+
+  <Step title="Connect control signals">
+    - STEP → Pin 25
+    - DIR → Pin 33
+    - EN → Pin 13 (active low, pulled high to disable)
+  </Step>
+
+  <Step title="Connect UART serial">
+    - PDN_UART (driver RX) → Pin 12 (ESP32 TX)
+    - Driver TX → Pin 14 (ESP32 RX)
+    - Pull PDN_UART high through 10kΩ resistor for UART mode
+  </Step>
+</Steps>
+
+**R_SENSE Configuration**: 0.11Ω (defined in `settings.h:210`)
+
+### TMC2209 (Revision 2)
+
+The TMC2209 adds stallGuard for sensorless homing and improved current control.
+
+<Steps>
+  <Step title="Connect power">
+    - VM: Motor power supply (12-24V)
+    - VDD: Logic power (5V tolerant, use 3.3V)
+    - GND: Common ground
+  </Step>
+
+  <Step title="Connect motor phases">
+    Same as TMC2208 - connect to A1, A2, B1, B2
+  </Step>
+
+  <Step title="Connect control signals">
+    - STEP → Pin 25
+    - DIR → Pin 33
+    - EN → Pin 27 (active low)
+  </Step>
+
+  <Step title="Connect UART serial">
+    - PDN_UART (driver RX/TX) → Pin 19 (ESP32 TX)
+    - Driver TX → Pin 18 (ESP32 RX)
+    - Single-wire UART mode available
+  </Step>
+</Steps>
+
+**R_SENSE Configuration**: 0.11Ω (same as TMC2208)
+
+<Warning>
+The TMC2209 is required for sensorless homing. Revision 1 boards with TMC2208 do not support automatic calibration.
+</Warning>
+
+## Shifter Button Wiring
+
+Manual shifter buttons allow resistance adjustment during rides.
+
+### Button Configuration
+
+- **Shift Up**: Increases resistance (simulates shifting to harder gear)
+- **Shift Down**: Decreases resistance (simulates shifting to easier gear)
+- **Debounce delay**: 200ms (configurable in `settings.h:130`)
+
+### Wiring Buttons
+
+<Steps>
+  <Step title="Connect shift up button">
+    - One terminal to Shift Up pin (19 for Rev1, 26 for Rev2)
+    - Other terminal to GND
+    - Internal pull-up resistor enabled in firmware
+    - Button press pulls pin LOW
+  </Step>
+
+  <Step title="Connect shift down button">
+    - One terminal to Shift Down pin (18 for Rev1, 32 for Rev2)
+    - Other terminal to GND
+    - Internal pull-up resistor enabled in firmware
+    - Button press pulls pin LOW
+  </Step>
+
+  <Step title="Test button response">
+    - Power on the device
+    - Press each button and verify resistance changes
+    - If response is erratic, increase debounce delay
+    - If response is slow, decrease debounce delay
+  </Step>
+</Steps>
+
+**Special Function**: Holding both shifter buttons for 2+ seconds initiates a BLE device scan (`SHIFTERS_HOLD_FOR_SCAN` in `settings.h:254`).
+
+## Auxiliary Serial (Peloton Interface)
+
+Revision 2 boards include auxiliary serial communication for direct Peloton bike integration.
+
+### Pin Connections
+
+- **Aux Serial TX**: Pin 21 (`r2_AUX_SERIAL_TX`)
+- **Aux Serial RX**: Pin 22 (`r2_AUX_SERIAL_RX`)
+- **Buffer size**: 10 bytes (`AUX_BUF_SIZE` in `settings.h:341`)
+- **Poll interval**: 100ms (`AUX_SERIAL_DELAY` in `settings.h:228`)
+
+Reference: `include/settings.h:196-200`
+
+### Peloton TX Configuration
+
+<Steps>
+  <Step title="Enable Peloton TX">
+    Set `PELOTON_TX` to `true` in settings.h:344 (enabled by default).
+  </Step>
+
+  <Step title="Connect to Peloton bike">
+    - Identify TX/RX lines on Peloton bike connector
+    - Connect Aux Serial TX (pin 21) to Peloton RX
+    - Connect Aux Serial RX (pin 22) to Peloton TX
+    - Common ground connection required
+    - Use level shifters if Peloton uses 5V logic
+  </Step>
+
+  <Step title="Verify communication">
+    - Monitor serial output for Peloton messages
+    - Resistance values should appear in logs
+    - TX check interval: 20 loops if no data received (`TX_CHECK_INTERVAL` in `settings.h:347`)
+  </Step>
+</Steps>
+
+<Warning>
+Peloton bikes use proprietary protocols. Ensure you have the correct pinout for your specific Peloton model before connecting.
+</Warning>
+
+## Power Supply Requirements
+
+### ESP32 Power
+
+- **Input voltage**: 5V via USB or VIN pin (7-12V with onboard regulator)
+- **Current draw**: ~250mA typical, 500mA peak (WiFi + BLE active)
+- **Recommended**: 5V 2A power supply
+
+### Stepper Motor Power
+
+- **Voltage**: 12-24V DC
+- **Current**: Configured via firmware (default 900mA RMS)
+- **Peak current**: 2000mA maximum (hardware limited by TMC2225)
+- **Recommended**: 24V 2A power supply for best performance
+
+Reference: `settings.h:59` for default stepper power
+
+<Warning>
+Never exceed 2000mA stepper current. The TMC drivers will overheat and may fail. Default 900mA provides good torque with safe thermal performance.
+</Warning>
+
+### Current Configuration
+
+```cpp
+// Default stepper peak current in mA
+#define DEFAULT_STEPPER_POWER 900
+
+// Hold current scaler (RMS current divisor when not moving)
+#define HOLD_PWR_SCALER .3f
+
+// Homing power scaler (reduced power for stall detection)
+#define PWR_SCALER_FOR_HOMING 0.8f
+```
+
+Reference: `include/settings.h:57-74`
+
+## LED Indicator
+
+The status LED on pin 2 indicates device state:
+
+- **Solid**: Normal operation
+- **Blinking**: Activity (varies by firmware state)
+- **Off**: Device not powered or in deep sleep
+
+Pin 2 is the internal LED on most ESP32 development boards.
+
+## Wiring Best Practices
+
+<Steps>
+  <Step title="Use appropriate wire gauge">
+    - Signal wires: 22-26 AWG
+    - Power wires: 18-22 AWG (stepper motor)
+    - Ground: Same gauge as power wires
+  </Step>
+
+  <Step title="Keep wiring organized">
+    - Route power and signal wires separately when possible
+    - Use cable management to prevent strain on connections
+    - Label all connections for future maintenance
+  </Step>
+
+  <Step title="Secure all connections">
+    - Use heat shrink tubing on solder joints
+    - Strain relief on wire entries to PCB
+    - Double-check polarity before applying power
+  </Step>
+
+  <Step title="Test before final assembly">
+    - Verify all connections with multimeter
+    - Check for shorts between power rails
+    - Test each subsystem independently
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Stepper motor doesn't move
+
+- Verify enable pin is LOW (motor enabled)
+- Check motor phase connections
+- Confirm power supply voltage and current capacity
+- Test UART communication to driver
+
+### Erratic stepper movement
+
+- Check for loose motor connections
+- Verify phase wiring (swap A2/A1 or B2/B1 if needed)
+- Reduce stepper speed or increase current
+- Check for electrical noise on step/dir lines
+
+### Buttons not responding
+
+- Verify correct pin assignments for your revision
+- Check button connections to ground
+- Increase debounce delay if false triggers occur
+- Test with multimeter (pin should read HIGH when released, LOW when pressed)
+
+### No serial communication with driver
+
+- Verify TX/RX pins are correct for your board revision
+- Check baud rate configuration (115200 default for TMC UART)
+- Ensure PDN_UART is pulled high for UART mode
+- Test with oscilloscope or logic analyzer
+
+## Next Steps
+
+Once wiring is complete and tested:
+
+1. Proceed to [Mounting](/building/mounting) to install on bike
+2. Complete [Calibration](/building/calibration) for homing and power table setup
+
+## Reference Files
+
+- Pin definitions: `include/settings.h:133-204`
+- Board configuration: `include/boards.h:17-66`
+- Main hardware control: `include/Main.h`
+- Stepper parameters: `SmartSpin_parameters.h`

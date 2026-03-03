@@ -1,0 +1,345 @@
+---
+title: Testing
+description: Testing procedures and guidelines for SmartSpin2k firmware
+---
+
+SmartSpin2k uses the Unity testing framework for unit testing. Tests can run on native hardware (your computer) or on actual ESP32 devices.
+
+## Test Framework
+
+The project uses [Unity](http://www.throwtheswitch.org/unity) - a lightweight C unit testing framework designed for embedded systems.
+
+**Test location:** `test/` directory in the source tree
+
+## Running Tests
+
+### Native Tests (Recommended)
+
+Run tests on your development machine without ESP32 hardware:
+
+```bash
+pio test -e native
+```
+
+**Advantages:**
+- Faster execution
+- No hardware required
+- Easier debugging
+- Ideal for CI/CD pipelines
+
+### Hardware Tests
+
+Run tests on actual ESP32 hardware:
+
+```bash
+pio test -e release
+```
+
+Or for debug builds:
+
+```bash
+pio test -e debug
+```
+
+**Requirements:**
+- ESP32 board connected via USB
+- Proper serial port configuration
+
+## Test Structure
+
+Tests are organized into test classes and functions defined in `test/test.h` and implemented across multiple `.cpp` files.
+
+### Available Test Suites
+
+#### Bluetooth Data Parsing Tests
+
+**FitnessMachineIndoorBikeData** (`test/test_FitnessMachineIndoorBikeData.cpp`)
+- Power parsing
+- Cadence parsing
+- Heart rate parsing
+
+**CyclePowerData** (`test/test_CyclePowerData.cpp`)
+- Power parsing
+- Cadence parsing
+- Heart rate parsing
+- Speed parsing
+
+#### Power Management Tests
+
+**PowerBuffer** (`test/test_PowerBuffer.cpp`)
+- Buffer value management
+- Index handling
+
+**PowerTable** (`test/test_write_PowerTable.cpp`)
+- Save and load operations
+- Power table persistence
+
+**PowerTable Lookup** 
+- `test/test_pt_lookup_resistance.cpp` - Resistance lookup
+- `test/test_pt_lookup_watts.cpp` - Watts lookup
+
+**TableFill** (`test/test_table_fill.cpp`)
+- Incomplete table filling
+- Interpolation testing
+
+#### BLE Device Tests
+
+**DeviceNaming** (`test/test_adevName2UniqueName.cpp`)
+- Traditional device address handling
+- Android device compatibility
+- Random address pattern detection
+- Null device handling
+- Backward compatibility
+
+#### Basic Framework Tests
+
+**Unity Basic Tests** (`test/test_unity.cpp`)
+- Test framework verification
+- Basic math operations
+
+## Test Data
+
+The `test/data/` directory contains test fixtures:
+
+**Power Table Files** (`.ptab` format):
+- `power_table.ptab` - Standard power table
+- `power_table_incomplete.ptab` - Incomplete table for interpolation tests
+- `converged_nebula3.ptab` - Converged calibration data
+- Various bike-specific tables (Nebula3, IC4, etc.)
+
+**Ride Log Files** (`.txt` format):
+- `Ride_Log.txt`, `Ride_Log3.txt`, `Ride_Log4.txt` - Historical ride data
+- `marc_roy.txt` - User-specific test data
+
+## Writing Tests
+
+<Steps>
+  <Step title="Create Test File">
+    Create a new test file in the `test/` directory:
+    
+    ```cpp
+    /*
+     * Copyright (C) 2020  Anthony Doud & Joel Baranick
+     * All rights reserved
+     *
+     * SPDX-License-Identifier: GPL-2.0-only
+     */
+
+    #include <unity.h>
+    #include "test.h"
+    
+    void test_my_feature(void) {
+      TEST_ASSERT_EQUAL(expected, actual);
+    }
+    ```
+  </Step>
+  
+  <Step title="Add Test Class Declaration">
+    Add your test class to `test/test.h`:
+    
+    ```cpp
+    class TestMyFeature {
+     public:
+      static void test_my_feature(void);
+    };
+    ```
+  </Step>
+  
+  <Step title="Register Test in Test Runner">
+    Add your test to the test runner in `test/test_unity.cpp`:
+    
+    ```cpp
+    void setup() {
+      UNITY_BEGIN();
+      
+      // ... existing tests ...
+      
+      {
+        TestMyFeature test;
+        RUN_TEST(test.test_my_feature);
+      }
+      
+      UNITY_END();
+    }
+    ```
+  </Step>
+  
+  <Step title="Run Your Tests">
+    Execute the test suite:
+    
+    ```bash
+    pio test -e native
+    ```
+  </Step>
+</Steps>
+
+## Unity Assertions
+
+Common Unity assertion macros:
+
+```cpp
+// Basic equality
+TEST_ASSERT_EQUAL(expected, actual)
+TEST_ASSERT_EQUAL_INT(expected, actual)
+TEST_ASSERT_EQUAL_FLOAT(expected, actual)
+
+// Boolean checks
+TEST_ASSERT_TRUE(condition)
+TEST_ASSERT_FALSE(condition)
+
+// Null checks
+TEST_ASSERT_NULL(pointer)
+TEST_ASSERT_NOT_NULL(pointer)
+
+// Range checks
+TEST_ASSERT_INT_WITHIN(delta, expected, actual)
+```
+
+## Test Lifecycle
+
+### Setup and Teardown
+
+The test framework provides hooks for setup and cleanup:
+
+```cpp
+void setUp(void) {
+  // Runs before each test
+  // Initialize test fixtures
+}
+
+void tearDown(void) {
+  // Runs after each test
+  // Clean up resources
+}
+```
+
+### Native vs. Arduino
+
+Tests automatically detect the execution environment:
+
+```cpp
+#ifdef ARDUINO
+  // Running on ESP32 hardware
+  delay(2000);  // Allow hardware to stabilize
+#else
+  // Running on native platform
+  // No delays needed
+#endif
+```
+
+## Test Output Directory
+
+For native builds, test output is written to `test/output/`. This directory is automatically created if it doesn't exist.
+
+## Continuous Integration
+
+The native test environment is ideal for CI/CD:
+
+```yaml
+# Example GitHub Actions workflow
+- name: Run tests
+  run: pio test -e native
+```
+
+**Benefits:**
+- Fast execution
+- No hardware requirements
+- Easy integration with CI systems
+
+## Static Code Analysis
+
+Both debug and native environments include cppcheck integration:
+
+```bash
+pio check -e debug
+```
+
+Or:
+
+```bash
+pio check -e native
+```
+
+**Analysis configuration:**
+- All checks enabled
+- Medium and high severity issues reported
+- Excludes build artifacts and third-party libraries
+
+## Debugging Tests
+
+### Using Debug Environment
+
+Build with debug symbols:
+
+```bash
+pio run -e debug
+```
+
+The debug environment sets a breakpoint at the `setup()` function and includes full debug symbols.
+
+### Serial Monitor Debugging
+
+For hardware tests, monitor serial output:
+
+```bash
+pio test -e release --verbose
+```
+
+The ESP32 exception decoder is automatically enabled to decode crash stack traces.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Keep Tests Focused">
+    Each test should verify a single behavior or feature. This makes failures easier to diagnose.
+  </Accordion>
+  
+  <Accordion title="Use Descriptive Names">
+    Test names should clearly describe what they're testing:
+    ```cpp
+    void test_parses_power_from_indoor_bike_data(void)
+    ```
+  </Accordion>
+  
+  <Accordion title="Test Edge Cases">
+    Include tests for:
+    - Null/empty inputs
+    - Boundary values
+    - Invalid data
+    - Error conditions
+  </Accordion>
+  
+  <Accordion title="Organize Test Data">
+    Keep test fixtures in `test/data/` and use descriptive filenames.
+  </Accordion>
+  
+  <Accordion title="Run Tests Frequently">
+    Execute tests before committing code:
+    ```bash
+    pio test -e native && git commit
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Tests Fail on Native but Pass on Hardware
+
+Check for hardware-specific code that needs mocking or abstraction.
+
+### Test Output Directory Missing
+
+The native test runner automatically creates `test/output/`. If this fails, check filesystem permissions.
+
+### Serial Monitor Not Working
+
+Ensure:
+- Correct baud rate (115200)
+- Proper serial port selection
+- No other programs using the serial port
+
+## Next Steps
+
+- Review [Contributing Guidelines](/api/contributing) for code quality standards
+- Learn about [Building from Source](/api/building-from-source)
+- Explore the [SS2K Wiki](https://github.com/doudar/SmartSpin2k/wiki) for more details

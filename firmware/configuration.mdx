@@ -1,0 +1,353 @@
+---
+title: Firmware Configuration
+description: Configure WiFi, stepper motors, sensors, and advanced settings
+---
+
+## Overview
+
+SmartSpin2k stores configuration in LittleFS as `/config.txt` and provides both web-based and programmatic configuration options.
+
+## Network Configuration
+
+### WiFi Setup
+
+<Steps>
+  <Step title="Connect to Device">
+    On first boot, SmartSpin2k creates a WiFi access point:
+    
+    - **Default SSID**: `SmartSpin2k`
+    - **Default Password**: `password`
+
+    Connect to this network from your device.
+  </Step>
+
+  <Step title="Access Web Interface">
+    Open your browser and navigate to:
+    ```
+    http://192.168.4.1
+    ```
+  </Step>
+
+  <Step title="Configure Network">
+    Enter your WiFi credentials in the settings page:
+    
+    - **SSID**: Your WiFi network name
+    - **Password**: Your WiFi password
+    - **Device Name**: Custom hostname (default: "SmartSpin2k")
+
+    <Note>
+    Network settings are applied on next reboot. The device will attempt to connect in STA (Station) mode.
+    </Note>
+  </Step>
+
+  <Step title="Connection Behavior">
+    The firmware follows this connection logic:
+    
+    1. Attempts STA connection for 10 seconds (WIFI_CONNECT_TIMEOUT)
+    2. If successful, uses your network and gets DHCP IP
+    3. If failed, falls back to AP mode with previous credentials
+    4. Sets WiFi TX power to 19.5dBm for optimal range
+  </Step>
+</Steps>
+
+### Device Naming
+
+The device name is used for:
+- **WiFi SSID** in AP mode
+- **Bluetooth name** for BLE advertising
+- **mDNS hostname** for local network discovery
+- **Web interface** identification
+
+```cpp
+// Default from settings.h:14
+const char* const DEVICE_NAME = "SmartSpin2k";
+```
+
+## Stepper Motor Configuration
+
+### Basic Stepper Settings
+
+These settings control the TMC2209 stepper driver behavior:
+
+| Parameter | Default | Range | Description |
+|-----------|---------|-------|-------------|
+| **Stepper Power** | 900 mA | 0-2000 mA | Peak current to stepper motor (RMS is lower) |
+| **Stepper Speed** | 3500 steps/s | 1-5000 | Maximum stepper speed |
+| **Shift Step** | 1200 steps | 100-5000 | Steps per shift button press |
+| **StealthChop** | true | true/false | Enable quiet operation mode |
+| **Stepper Direction** | false | true/false | Reverse motor direction |
+| **Shifter Direction** | false | true/false | Reverse shift button logic |
+
+<Warning>
+The TMC2225 hardware restricts maximum current to 2000mA. Exceeding this may damage the driver. The firmware uses a hold current scaler of 0.3 (HOLD_PWR_SCALER) to reduce power when stationary.
+</Warning>
+
+### Stepper Acceleration
+
+Fixed at 3000 steps/s² (STEPPER_ACCELERATION in settings.h:65) for optimal responsiveness without losing steps.
+
+### Advanced Stepper Settings
+
+**R_SENSE Resistor**: 0.11Ω (settings.h:210)
+- Critical for accurate current sensing
+- Do not modify unless hardware changed
+
+**Current Scaling**:
+- Revision 1: PWR_SCALER = 31
+- Revision 2: PWR_SCALER = 12
+
+These values are automatically applied based on hardware detection.
+
+## Travel Limits & Calibration
+
+### Power-Based Limits
+
+Define the resistance range your bike can handle:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Min Watts** | 50W | Lower travel limit (lightest resistance) |
+| **Max Watts** | 1000W | Upper travel limit (maximum resistance) |
+
+```cpp
+// From settings.h:99-104
+#define DEFAULT_MIN_WATTS 50
+#define DEFAULT_MAX_WATTS 1000
+```
+
+### Position Limits
+
+The firmware tracks stepper position and enforces limits:
+
+- **Initial Limit**: ±200,000,000 steps (DEFAULT_STEPPER_TRAVEL)
+- **Dynamic Limits**: Calculated from Power Table data after calibration
+- **Homing**: Required to establish absolute position reference
+
+### Homing Configuration
+
+**Homing Sensitivity**: 50 (default, range 0-255)
+- Lower values = more sensitive stallGuard detection
+- Higher values = less sensitive, may fail to detect stall
+- Power reduced to 80% during homing (PWR_SCALER_FOR_HOMING)
+
+<CodeGroup>
+```cpp Homing Sensitivity
+// From settings.h:352
+#define DEFAULT_HOMING_SENSITIVITY 50
+
+// Power reduction during homing
+#define PWR_SCALER_FOR_HOMING 0.8f
+```
+
+```cpp Homing Process
+// Main.cpp:650-673 (simplified)
+long totalSgResult = 0;
+for (int i = 0; i < SAMPLES_TO_AVERAGE; i++) {
+  totalSgResult += driver.SG_RESULT();
+  delay(10);
+}
+threshold = round(totalSgResult / (float)SAMPLES_TO_AVERAGE);
+```
+</CodeGroup>
+
+## Resistance Modes
+
+### Bike-Specific Resistance
+
+SmartSpin2k auto-detects and configures for specific bike types:
+
+**Peloton Bikes**:
+- Min Resistance: 5
+- Max Resistance: 98
+- Serial interrogation enabled (PELOTON_TX)
+- Aux Serial: 19200 baud, 8N1
+
+**Echelon Bikes**:
+- Min Resistance: 5  
+- Max Resistance: 30
+
+**Generic Bikes**:
+- Resistance Range: ±2000 steps
+
+## ERG Mode Configuration
+
+ERG mode automatically adjusts resistance to maintain target power:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| **ERG Sensitivity** | 3.0 | Shifts per 30W difference |
+| **Watts Per Shift** | 30W | Expected power change per shift |
+| **ERG Per Shift** | 10W | Power target change per manual shift |
+| **Min ERG Cadence** | 30 RPM | ERG stops below this cadence |
+
+```cpp
+// From settings.h:80-96
+#define ERG_SENSITIVITY 3.0f
+#define WATTS_PER_SHIFT 30
+#define ERG_PER_SHIFT 10
+#define MIN_ERG_CADENCE 30
+```
+
+### ERG Mode Features
+
+<Tabs>
+  <Tab title="Power Table">
+    **Power Table Integration** (settings.h:280)
+    ```cpp
+    #define ERG_MODE_USE_POWER_TABLE
+    ```
+    Uses calibrated position data for accurate power targeting.
+  </Tab>
+  
+  <Tab title="PID Controller">
+    **PID Control** (settings.h:283-286)
+    ```cpp
+    #define ERG_MODE_USE_PID
+    #define ERG_MODE_PID_WINDOW 20
+    ```
+    Activates PID control within ±20W of target for smooth adjustments.
+  </Tab>
+  
+  <Tab title="FTMS Passthrough">
+    **FTMS Passthrough** (settings.h:90)
+    ```cpp
+    #define FTMS_PASSTHROUGH false
+    ```
+    Forwards FTMS commands to connected external trainers.
+  </Tab>
+</Tabs>
+
+## BLE Device Configuration
+
+Connect external sensors via the web interface:
+
+### Supported Devices
+
+- **Power Meters**: Any BLE Cycling Power Service device
+- **Heart Rate Monitors**: Any BLE Heart Rate Service device  
+- **Remotes**: FTMS-compatible remote controls
+
+### Connection Modes
+
+| Setting | Behavior |
+|---------|----------|
+| `"none"` | Do not connect to any device |
+| `"any"` | Connect to first available device of type |
+| `"Device Name"` | Connect only to specific device by name |
+
+```cpp
+// From settings.h:236-250
+#define CONNECTED_POWER_METER NONE
+#define CONNECTED_HEART_MONITOR NONE  
+#define CONNECTED_REMOTE NONE
+```
+
+### BLE Client Settings
+
+- **Max Devices**: 3 simultaneous BLE connections (NUM_BLE_DEVICES)
+- **Notify Delay**: 503ms between BLE notifications
+- **Client Delay**: 101ms reconnection check interval
+- **Disconnect Timeout**: 5000ms without data triggers disconnect
+- **Reconnect Interval**: 6000ms between automatic reconnect attempts
+- **Scan Duration**: 4000ms for device discovery
+
+## Power Correction
+
+**Power Correction Factor** (PCF): 0.5 - 2.5 (default 1.0)
+
+Multiplies reported power to match external power meter:
+
+```cpp
+// From settings.h:51-55
+#define MIN_PCF .5f
+#define MAX_PCF 2.5f
+```
+
+**Example**: If SmartSpin2k reports 200W but your power meter shows 220W:
+- PCF = 220 / 200 = 1.1
+
+## Incline Configuration
+
+**Incline Multiplier**: 7.0 (default)
+
+Converts percent grade to stepper steps:
+
+```cpp
+// From settings.h:44-49
+// Incline from app (percent grade × 100) → stepper steps  
+// 2,181.76 steps = 1 full knob rotation
+#define INCLINE_MULTIPLIER 7.0f
+```
+
+Adjust this value if incline changes don't match expected resistance.
+
+## Advanced Configuration
+
+### Debug Logging
+
+Enable specialized debug output by uncommenting in settings.h:
+
+```cpp
+// #define DEBUG_STACK           // Task stack usage
+// #define DEBUG_HR_TO_PWR       // HR to power calculation  
+// #define DEBUG_POWERTABLE      // Power table operations
+// #define DEBUG_BLE_TX_RX       // BLE data transmission
+// #define CUSTOM_CHAR_DEBUG     // Custom characteristic data
+// #define DEBUG_DIRCON_MESSAGES // DirectConnect protocol
+```
+
+### Logging Outputs
+
+- **Serial Monitor**: 115200 baud (MONITOR_SPEED)
+- **UDP Logging**: Configurable destination IP/port
+- **WebSocket Logging**: Real-time browser console
+- **BLE Logging**: Via custom characteristic
+
+### Filesystem Management
+
+Configuration files stored in LittleFS:
+
+| File | Purpose |
+|------|----------|
+| `/config.txt` | User configuration (JSON) |
+| `/PowerTable.txt` | Power calibration data |
+| `/build_version.txt` | Firmware version for OTA recovery |
+| `/index.html` | Web interface files |
+
+<Warning>
+Do not manually edit `/PowerTable.txt`. Use the web interface to reset calibration if needed.
+</Warning>
+
+## Temperature Management
+
+The ESP32 monitors internal temperature:
+
+```cpp
+// From settings.h:337-338
+#define THROTTLE_TEMP 90
+```
+
+When temperature exceeds 90°C, stepper power is automatically reduced to prevent overheating.
+
+## Configuration Storage
+
+All settings are stored as JSON in `/config.txt` with maximum size:
+
+```cpp  
+// From settings.h:267-274
+#define USERCONFIG_JSON_SIZE 2000 + DEBUG_LOG_BUFFER_SIZE
+#define RUNTIMECONFIG_JSON_SIZE 1000 + DEBUG_LOG_BUFFER_SIZE
+```
+
+Configuration persists across reboots and firmware updates.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="OTA Updates" icon="cloud-arrow-up" href="/firmware/ota-updates">
+    Enable automatic firmware updates
+  </Card>
+  <Card title="Development" icon="code" href="/firmware/development">
+    Build custom firmware from source
+  </Card>
+</CardGroup>

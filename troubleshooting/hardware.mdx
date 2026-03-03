@@ -1,0 +1,402 @@
+---
+title: 'Hardware Troubleshooting'
+description: 'Diagnosing and fixing hardware-related issues'
+icon: 'microchip'
+---
+
+## Hardware Revisions
+
+SmartSpin2k has two main hardware revisions with different pin configurations:
+
+### Revision 1
+- **Board name**: "Revision One"
+- **Detection voltage**: 0 (on pin 34)
+- **Stepper driver**: TMC2208/TMC2224
+- **Serial pins**: RX=14, TX=12
+- **Shifter pins**: Up=19, Down=18
+- **Stepper pins**: Enable=13, Step=25, Dir=33
+- **Power scaler**: 31
+
+### Revision 2
+- **Board name**: "Revision Two" 
+- **Detection voltage**: 4095 (on pin 34)
+- **Stepper driver**: TMC2209
+- **Serial pins**: RX=18, TX=19
+- **Aux serial pins**: RX=22, TX=21 (for Peloton)
+- **Shifter pins**: Up=26, Down=32
+- **Stepper pins**: Enable=27, Step=25, Dir=33
+- **Power scaler**: 12
+
+<Tip>
+  The device automatically detects hardware revision on boot by reading pin 34 voltage.
+</Tip>
+
+## Hardware Detection Issues
+
+<AccordionGroup>
+  <Accordion title="Wrong hardware revision detected">
+    **Symptoms:** Logs show incorrect board revision, features don't work.
+
+    **Detection method:**
+    
+    SmartSpin2k reads analog voltage on pin 34 (REV_PIN):
+    - Rev 1: ~0V (analogRead returns 0)
+    - Rev 2: ~3.3V (analogRead returns 4095)
+    
+    Detection code uses midpoint comparison:
+    ```cpp
+    if (actualVoltage - rev1.voltage >= rev2.voltage - actualVoltage) {
+      currentBoard = rev2;
+    } else {
+      currentBoard = rev1;
+    }
+    ```
+
+    **Troubleshooting:**
+    
+    1. Check pin 34 connection
+    2. Verify voltage divider circuit (Rev 2)
+    3. Look for shorts or open connections
+    4. Check logs during boot: "Current Board Revision is: [name]"
+
+    <Warning>
+      Using wrong revision settings can damage hardware due to incorrect pin assignments.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Power supply problems">
+    **Symptoms:** Device resets under load, motor stalls, brownouts.
+
+    **Power requirements:**
+    
+    - **Voltage**: 12V DC recommended
+    - **Current**: Minimum 2A, 3A+ recommended
+    - **Stepper peak current**: Up to 2000mA (TMC2225 limit)
+    - **Default stepper**: 900mA (DEFAULT_STEPPER_POWER)
+
+    **Common issues:**
+    
+    1. **Insufficient current**: Stepper draws more than supply can provide
+    2. **Voltage drop**: Long wires or poor connections
+    3. **Shared power**: ESP32 and stepper on same supply
+    4. **No capacitor**: Lack of power filtering causes voltage spikes
+
+    **Solutions:**
+    
+    - Use quality 12V 3A power supply
+    - Add bulk capacitor (1000μF or larger) near power input
+    - Shorten power wires
+    - Check all connections for tightness
+    - Reduce stepper power if not needed
+
+    <Tip>
+      Monitor ESP32 voltage during operation. Below 3.0V indicates power issues.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="ESP32 overheating">
+    **Symptoms:** Device throttles performance, becomes unstable, or resets.
+
+    **Temperature monitoring:**
+    
+    - Throttle threshold: 90°C (THROTTLE_TEMP)
+    - Action: Reduce stepper motor current automatically
+    - ESP32 max temp: 125°C (not recommended)
+
+    **Common causes:**
+    
+    1. **Poor ventilation**: Enclosed case with no airflow
+    2. **High ambient temp**: Operating in hot environment  
+    3. **Overclocking**: Running CPU too fast
+    4. **High WiFi/BLE usage**: Continuous radio activity generates heat
+
+    **Cooling solutions:**
+    
+    - Add ventilation holes to case
+    - Use heatsink on ESP32
+    - Add small fan for active cooling
+    - Position away from heat sources
+    - Reduce stepper power to lower overall power consumption
+
+    <Warning>
+      Sustained operation above 85°C can reduce ESP32 lifespan.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Stepper driver communication failure">
+    **Symptoms:** Motor doesn't respond, no UART communication with driver.
+
+    **Serial configuration:**
+    
+    - **Baud rate**: 57600
+    - **Format**: 8N2 (8 data bits, no parity, 2 stop bits)
+    - **R_SENSE**: 0.11Ω
+    - **Driver address**: 0b00
+
+    **Check these items:**
+    
+    1. **RX/TX pins**: Verify correct pins for your revision
+    2. **Crossed wires**: RX on ESP32 → TX on driver, TX → RX
+    3. **PDN pin**: Must be high for UART mode
+       - Code sets: `driver.pdn_disable(true)`
+    4. **UART enable**: Driver must have MS1/MS2 configured for UART
+       - Code sets: `driver.mstep_reg_select(true)`
+    5. **Ground connection**: ESP32 and driver must share common ground
+
+    **Testing:**
+    
+    Add debug logging in setupTMCStepperDriver() to check:
+    - `driver.begin()` return value
+    - `driver.test_connection()` result
+    - Register read/write operations
+  </Accordion>
+
+  <Accordion title="Shifter button hardware issues">
+    **Symptoms:** Buttons don't register, register multiple times, or are reversed.
+
+    **Hardware setup:**
+    
+    - Pull-up mode: INPUT_PULLUP (internal)
+    - Active state: LOW (button pressed = 0V)
+    - Debounce: 200ms (DEBOUNCE_DELAY)
+
+    **Electrical checks:**
+    
+    1. **Button continuity**: Test with multimeter
+    2. **Wire connections**: Check for loose or broken wires
+    3. **Pin assignment**: Verify using correct pins for revision
+    4. **Ground connection**: Button must connect pin to GND
+    5. **Internal pullup**: No external resistor needed
+
+    **Debounce adjustment:**
+    
+    If buttons are bouncy (multiple shifts from one press):
+    - Increase DEBOUNCE_DELAY in settings.h
+    - Default 200ms works for most switches
+    - Tactile switches may need 100-150ms
+    - Membrane switches may need 250-300ms
+
+    **Direction reversal:**
+    
+    If up/down are backwards, adjust shifterDir in configuration (don't swap wires).
+  </Accordion>
+
+  <Accordion title="LED indicator not working">
+    **Symptoms:** Onboard LED doesn't light up or blink.
+
+    **LED configuration:**
+    
+    - Pin: 2 (LED_PIN)
+    - Active state: HIGH
+    - Built-in LED on most ESP32 dev boards
+
+    **LED behavior:**
+    
+    - ON: Device running normally
+    - Fast blink (10x): Factory reset in progress
+    - OFF: Device not powered or crashed
+
+    **Troubleshooting:**
+    
+    1. **Wrong board**: Some ESP32 boards use different LED pins
+    2. **LED removed**: Some minimal boards don't have built-in LED  
+    3. **Pin conflict**: Pin 2 used for other purpose
+    4. **Damaged LED**: Physical LED component failed
+
+    <Tip>
+      LED is mainly for status indication. Non-functional LED doesn't affect core operation.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Stepper Motor Issues
+
+### Motor Won't Turn
+
+**Check in this order:**
+
+1. **Power**: Verify 12V supply connected
+2. **Enable pin**: Motor enabled (pin LOW)
+   - Auto-enables when cadence > 1 RPM
+   - Auto-disables when idle to save power
+3. **Driver power**: Check LED on TMC driver board
+4. **Wiring**: Verify all 4 motor wires connected
+5. **Coil resistance**: Test motor windings (~2-5Ω per coil)
+
+### Motor Vibrates But Doesn't Turn
+
+**Possible causes:**
+
+1. **Incorrect wiring**: Coil pairs swapped
+2. **Current too low**: Increase stepperPower setting
+3. **Microsteps wrong**: Should be 1/4 step (microsteps=4)
+4. **Speed too high**: Reduce stepperSpeed (default 3500)
+5. **Acceleration too high**: Reduce acceleration (default 3000)
+
+### Motor Overheating
+
+**Normal operation:**
+- Stepper motors run warm (40-60°C is normal)
+- Driver should regulate current automatically
+
+**Excessive heat (>80°C):**
+
+1. **Current too high**: Reduce stepperPower (max 2000mA)
+2. **Hold current**: Should be 30% of run current (HOLD_PWR_SCALER)
+3. **Continuous operation**: Motor doesn't get breaks to cool
+4. **Driver heatsink**: Ensure TMC driver has adequate cooling
+5. **StealthChop**: Reduces heat vs. SpreadCycle
+
+<Warning>
+  TMC2225 has built-in thermal protection and will shut down if overheated.
+</Warning>
+
+### Motor Skipping Steps
+
+**Symptoms:** Position doesn't match expected, motor occasionally "jumps".
+
+**Common causes:**
+
+1. **Current insufficient**: Motor can't overcome load
+   - Increase stepperPower gradually
+2. **Speed too high**: Stepper can't keep up
+   - Reduce stepperSpeed or acceleration
+3. **Mechanical binding**: Knob hitting obstruction
+   - Check for physical interference
+4. **Driver overheating**: Thermal throttling
+   - Add heatsink to driver chip
+
+## Mechanical Issues
+
+<AccordionGroup>
+  <Accordion title="Knob slipping on shaft">
+    **Symptoms:** Motor turns but bike knob doesn't move.
+
+    **Mechanical checks:**
+    
+    1. **Coupling alignment**: Motor shaft to knob adapter
+    2. **Set screw tightness**: Ensure all set screws tight
+    3. **Adapter fit**: Should be snug on bike knob
+    4. **Shaft flat**: Set screw should contact flat on motor shaft
+
+    **Solutions:**
+    
+    - Tighten all set screws
+    - Use threadlocker on set screws
+    - Verify correct adapter size for your bike
+    - Check for worn adapter teeth (3D printed parts)
+  </Accordion>
+
+  <Accordion title="Excessive noise or grinding">
+    **Symptoms:** Motor makes loud noise during operation.
+
+    **Noise sources:**
+    
+    1. **StealthChop disabled**: SpreadCycle mode is louder
+       - Enable: `userConfig->setStealthChop(true)`
+       - Default: STEALTHCHOP true
+    2. **Resonance frequency**: Motor speed matches natural frequency
+       - Change stepperSpeed to avoid resonance
+    3. **Mechanical binding**: Adapter rubbing on bike
+    4. **Loose mounting**: Motor not securely attached
+    5. **High current**: More power = more noise
+
+    <Tip>
+      StealthChop significantly reduces noise at lower speeds but may have less torque.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Bike knob hitting end stops">
+    **Symptoms:** Motor tries to turn past physical limits.
+
+    **Software limits:**
+    
+    - Min step: rtConfig->getMinStep()
+    - Max step: rtConfig->getMaxStep()
+    - Default: ±DEFAULT_STEPPER_TRAVEL (200,000,000)
+
+    **Solution - Homing:**
+    
+    Perform homing procedure to set accurate limits:
+    1. Web interface → Spindown → Start
+    2. Wait for motor to find both end stops
+    3. Limits automatically saved to config
+
+    **Manual adjustment:**
+    
+    If homing not available (Rev 1 or no FTMS bike):
+    - Manually set hMin and hMax in configuration
+    - Use shift buttons to find limits
+    - Save positions via web interface
+  </Accordion>
+</AccordionGroup>
+
+## Electrical Testing
+
+### Voltage Measurements
+
+| Point | Expected Voltage | Notes |
+|-------|------------------|-------|
+| VIN | 12V DC | Main power input |
+| 3.3V | 3.3V | ESP32 power rail |
+| Pin 34 | 0V or 3.3V | Revision detection |
+| Enable pin | 0V (running) | HIGH disables motor |
+| Step pin | Pulses | Check with oscilloscope |
+
+### Continuity Testing
+
+**With power OFF:**
+
+1. **Ground continuity**: All GND points connected
+2. **Motor coils**: Each coil should show 2-5Ω
+3. **Button switches**: 0Ω when pressed, infinite when released
+4. **Serial lines**: Check for shorts between RX/TX
+
+## Hardware Modifications
+
+### Adding Auxiliary Serial (Rev 2)
+
+For Peloton bike integration:
+- **Baud rate**: 19200
+- **Format**: 8N1
+- **Pins**: RX=22, TX=21
+- **Buffer size**: AUX_BUF_SIZE (10 bytes)
+- **Polling interval**: AUX_SERIAL_DELAY (100ms)
+
+### External Power Meter Bracket
+
+Some users mount external power meters:
+- Doesn't interfere with SmartSpin2k operation
+- Use connectedPowerMeter setting to prioritize
+- Can compare SmartSpin2k power table accuracy
+
+## Safety Warnings
+
+<Warning>
+  **Electrical Safety:**
+  - Always disconnect power before working on hardware
+  - Verify polarity before connecting power
+  - Don't exceed 2000mA stepper current (TMC2225 limit)
+  - Use proper gauge wire for current levels
+</Warning>
+
+<Warning>
+  **Mechanical Safety:**  
+  - Ensure motor mount is secure before operation
+  - Keep fingers clear of moving parts
+  - Don't force knob past physical stops
+  - Use appropriate adapter for your bike model
+</Warning>
+
+## Getting Replacement Parts
+
+If hardware components are damaged:
+
+1. **Pre-assembled kits**: Available at [SmartSpin2k.com](https://www.smartspin2k.com/purchase-kits)
+2. **PCB only**: Check community forums for vendors
+3. **3D printed parts**: STL files in Hardware folder of repository
+4. **Electronic components**: Standard parts available from electronics suppliers
+
+<Tip>
+  Keep spare set screws and adapters on hand - they're the most commonly replaced items.
+</Tip>

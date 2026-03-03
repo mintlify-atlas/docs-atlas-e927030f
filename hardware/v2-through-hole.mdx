@@ -1,0 +1,427 @@
+---
+title: V2 Through Hole
+description: DIY-friendly V2 hardware with hand-solderable through-hole components and multiple case options
+---
+
+# V2 - Through Hole
+
+The V2 Through Hole version is designed with DIY builders in mind, featuring hand-solderable components on a carrier board PCB and multiple case options for different bike configurations.
+
+<img src="/Pictures/Version2.0.jpg" alt="V2 SmartSpin2k" />
+
+## Overview
+
+V2 is the DIY-friendly version that prints easier, is smaller, and uses less hardware than V1. It features a much better 11:40 tooth gear ratio and supports a carrier board PCB onto which development boards mount for easy wiring and soldering.
+
+### Key Features
+
+- **Hand-Solderable PCB** - Through-hole components anyone can solder
+- **Multiple Case Options** - Direct Mount, Universal, and Ultra Short variants
+- **Improved Gear Ratio** - 11:40 tooth gearing for optimal torque
+- **Smaller Footprint** - Compact design that fits more bikes
+- **Carrier Board Design** - Devkits mount directly for easy wiring
+- **Community Proven** - Widely built and documented
+
+## Case Options
+
+V2 offers three main case configurations to suit different bike geometries:
+
+<Tabs>
+  <Tab title="Direct Mount (Recommended)">
+    ### Direct Mount
+    
+    The recommended case design providing maximum stability, especially on bikes with spherical knobs.
+    
+    **Features:**
+    - Rigid mounting to bike head tube
+    - One-handed installation and removal
+    - Superior stability compared to universal mount
+    - Available in Long and Short versions
+    
+    **Requirements:**
+    - Bike-specific mount from Common Assets
+    - Arm component (various lengths available)
+    - M3 heat-set inserts
+    - M3 and M5 screws
+    
+    **Clearance Requirements:**
+    - **Long Case:** 115mm minimum (Bowflex C6, Peloton, Echelon Connect Sport)
+    - **Short Case:** 81mm minimum (Bowflex C7)
+    
+    **Tested Bikes:**
+    - Bowflex C6 / Schwinn IC4 (85mm arm)
+    - Bowflex C7 (45mm arm, short case)
+    - Echelon Connect Sport (105mm arm)
+    - Peloton Bike (75mm arm, 90mm for slammed bars)
+    
+    **Additional Components:**
+    - M3 x 5 x 4mm heat-set inserts (5mm diameter)
+    - 4x M3 screws (M3x8 or M3x10)
+    - 1x M5x12mm screw (arm connection)
+    - 2x M5x30mm screws (bike mount and case)
+    - 3x M5 nuts
+    - Velcro strap (1/2" x 8") OR VHB tape
+    - 2mm non-slip adhesive rubber (optional)
+  </Tab>
+  
+  <Tab title="Universal Mount">
+    ### Universal Mount
+    
+    Suitable for use across numerous bikes or when a direct mount solution is not required.
+    
+    **Features:**
+    - Works on many different bike models
+    - Strap-based mounting system
+    - No bike-specific parts needed
+    - Simpler assembly
+    
+    **Requirements:**
+    - Mounting strap (print from Universal Mount directory)
+    - #8 general purpose wood screws (4 pieces)
+    - Standard V2 case (left and right)
+    
+    **Clearance Requirements:**
+    - **Minimum:** 49mm between center of knob and rear of head tube
+    
+    **Components:**
+    - Body_Left.stl
+    - Body_Right.stl
+    - Mounting_For_New_Case.STL
+    - Knob_Cup_Large_HEX.STL (or standard)
+    - Bike-specific insert
+    - 11T and 40T gears
+    
+    **Assembly:**
+    Uses a HEX shaft design with 5/16" bolt for metal output shaft option.
+  </Tab>
+  
+  <Tab title="Ultra Short Mod">
+    ### Ultra Short Mod
+    
+    A modified version of the standard V2 case shortened to fit bikes with very limited clearance.
+    
+    **Features:**
+    - Shortened case design
+    - Fits bikes under 49mm clearance
+    - Same electronics as standard V2
+    - Maintains 11:40 gear ratio
+    
+    **When to Use:**
+    - Bikes with less than 49mm head tube spacing
+    - Very compact bike geometries
+    - When space is at an absolute premium
+    
+    <Warning>
+      The Ultra Short Mod requires very precise printing and assembly. Test fit all parts before final assembly.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## PCB and Electronics
+
+### Carrier Board PCB
+
+The V2 PCB is designed for hand soldering with through-hole components:
+
+- **Through-hole Components** - Easy to solder with basic skills
+- **Devkit Mounting** - ESP32 and stepper driver mount directly
+- **Labeled Connections** - Clear silkscreen markings
+- **Widely Available Parts** - Components from common suppliers
+
+**Ordering the PCB:**
+- [PCBWay Direct Link](https://www.pcbway.com/project/shareproject/SmartSpin2k_PCB.html)
+- Or use Gerber files from `Hardware/V2 - Through Hole/PCB/`
+
+### Soldering Jig
+
+<img src="/Pictures/solder_jig_assembly.jpg" alt="Soldering jig for V2 PCB" />
+
+A soldering jig is available to help align through-hole components:
+
+**Features:**
+- Holds components in correct positions
+- Makes soldering easier and more accurate
+- Prevents component misalignment
+- Reusable for multiple builds
+
+**Files:** Available in `Hardware/V2 - Through Hole/Soldering Jig/`
+
+## Required Parts
+
+### Electronics Components
+
+<Tabs>
+  <Tab title="Main Components">
+    | Component | Specification | Notes |
+    |-----------|--------------|-------|
+    | **ESP32 DevKit** | ESP32-WROOM-32 | Main controller |
+    | **Stepper Driver** | TMC2209 or A4988 | Silent driver recommended |
+    | **Stepper Motor** | NEMA 17 | Standard bipolar |
+    | **Power Supply** | 12-24V DC, 2A+ | Adequate current for motor |
+    | **Voltage Regulator** | LM1117 or similar | 3.3V for ESP32 |
+  </Tab>
+  
+  <Tab title="Passive Components">
+    | Type | Values Needed | Package |
+    |------|--------------|----------|
+    | **Resistors** | Various (10kΩ, 100Ω, etc.) | Through-hole |
+    | **Capacitors** | 100μF, 10μF, 0.1μF | Electrolytic & ceramic |
+    | **Diodes** | 1N4001 or similar | Through-hole |
+    | **LEDs** | Standard 5mm | Status indicators |
+  </Tab>
+  
+  <Tab title="Connectors">
+    | Connector | Type | Purpose |
+    |-----------|------|----------|
+    | **Motor Connector** | JST-XH 4-pin | Stepper motor |
+    | **Shifter Input** | 3.5mm audio jack | Button shifters |
+    | **Power Input** | Barrel jack | 12-24V DC |
+    | **Programming** | Micro USB | On ESP32 devkit |
+  </Tab>
+</Tabs>
+
+<Note>
+  See the [Components](/hardware/components) page for complete bill of materials and sourcing links.
+</Note>
+
+### 3D Printed Parts
+
+**From V2 Case Directory:**
+- body-left.stl (or short version)
+- body-right.stl (or short version)
+
+**From Common Assets:**
+- 11T spur gear (Spur gear 1M 11T.STL)
+- 40T spur gear (SS2K_40T_Mod1_Spur_Gear.STL or HEX version)
+- Knob cup (standard or HEX)
+- Bike-specific insert
+- Arm (if using Direct Mount) - select correct length
+- Bike mount (if using Direct Mount) - select for your bike
+- Shifters (optional, TPU material)
+
+### Hardware
+
+**For Direct Mount:**
+- M3 x 5 x 4mm heat-set inserts
+- M3x8 or M3x10 screws (4 pieces)
+- M5x12mm screw (1 piece)
+- M5x30mm screws (2 pieces)
+- M5 nuts (3 pieces)
+- Velcro strap 1/2" x 8" OR VHB tape
+- 2mm adhesive rubber (optional)
+
+**For Universal Mount:**
+- #8 black oxide wood screws (4 pieces)
+- 5/16" bolt and nuts (for HEX shaft option)
+
+## Assembly Instructions
+
+<Accordion title="Step 1: Solder the PCB">
+  **Using the Soldering Jig (Recommended):**
+  
+  1. Place PCB in soldering jig
+  2. Insert all through-hole components
+  3. Ensure components are flush and aligned
+  4. Solder all connections from bottom of PCB
+  5. Inspect for cold joints and bridges
+  6. Test continuity with multimeter
+  
+  **Component Order:**
+  1. Resistors (flat components first)
+  2. Diodes (mind polarity)
+  3. Capacitors (electrolytic - mind polarity)
+  4. Sockets for ICs (if using)
+  5. Connectors and headers
+  6. Mount devkits (ESP32, TMC2209)
+  
+  <Warning>
+    Double-check polarity on diodes, electrolytic capacitors, and LEDs before soldering.
+  </Warning>
+</Accordion>
+
+<Accordion title="Step 2: Test Electronics">
+  Before installing in case:
+  
+  1. Connect power supply (12-24V)
+  2. Check ESP32 powers on (LED indicator)
+  3. Flash firmware via USB
+  4. Test stepper motor connection
+  5. Verify stepper motor responds to commands
+  6. Test shifter inputs (if using)
+</Accordion>
+
+<Accordion title="Step 3: Print All Parts">
+  **Print Settings:**
+  - Layer height: 0.2mm
+  - Nozzle: 0.4mm (0.6mm acceptable)
+  - Infill: 40%
+  - Perimeters: 4
+  - Supports: From bed only (case halves)
+  
+  **Materials:**
+  - Case parts: PLA, PETG, or ABS
+  - Gears: PLA or PETG (solid infill recommended)
+  - Shifters: TPU (flexible material)
+  
+  See [3D Printing Guide](/hardware/3d-printing) for detailed settings.
+</Accordion>
+
+<Accordion title="Step 4: Assemble Gearbox">
+  **Universal Mount (HEX Shaft):**
+  
+  <img src="/Pictures/Axel_Assembly.gif" alt="Axle assembly" />
+  
+  1. Install 40T HEX gear on 5/16" bolt
+  2. Add washers and nuts on both sides
+  3. Tighten and ensure smooth rotation
+  4. Apply blue or red Loctite to nuts
+  5. Install 11T gear on stepper motor shaft
+  6. Insert bike-specific insert into knob cup
+  7. Mount knob cup to 40T gear shaft
+  
+  **Direct Mount:**
+  
+  1. Use 40T gear with integrated plastic shaft OR HEX version
+  2. Install insert in knob cup
+  3. Mount 11T gear to stepper motor
+  4. Test gear mesh before final assembly
+</Accordion>
+
+<Accordion title="Step 5: Install in Case">
+  <img src="/Pictures/Case_Assembly.gif" alt="Case assembly" />
+  
+  **For Direct Mount (with heat-set inserts):**
+  1. Install M3 heat-set inserts in case mounting holes
+  2. Mount PCB and stepper motor in right case half
+  3. Route wires neatly
+  4. Install gearbox assembly
+  5. Close left case half
+  6. Secure with M3 screws
+  
+  **For Universal Mount:**
+  1. Mount PCB and stepper motor
+  2. Install gearbox
+  3. Close case halves
+  4. Secure with #8 wood screws (4 places)
+</Accordion>
+
+<Accordion title="Step 6: Mount to Bike">
+  **Direct Mount Installation:**
+  1. Choose and print correct bike mount
+  2. Attach mount to head tube with velcro or VHB tape
+  3. Install arm with M5x30mm screw
+  4. Connect SmartSpin2k to arm with M5x12mm screw
+  5. Align with resistance knob
+  6. Test operation
+  
+  **Universal Mount Installation:**
+  1. Position SmartSpin2k on bike
+  2. Use mounting strap to secure to frame
+  3. Align knob cup with resistance knob
+  4. Adjust position and tighten
+  5. Test resistance control
+</Accordion>
+
+## Arm Length Selection (Direct Mount)
+
+Measure from back of head tube to center of knob, subtract 65mm:
+
+| Bike | Model | Arm Length (mm) |
+|------|-------|----------------|
+| BH Fitness | Any | 50 |
+| Body Bike | Body Bike | 50 (steep angle) |
+| BodyCraft | MAG | 35 |
+| Bowflex | C6 | 65 or 85 |
+| Bowflex | C7 | 45 |
+| Bowflex | IC Bike SE | 100 |
+| Bowflex | Velocore | 150 |
+| Dmasun | Any | 55 |
+| Echelon | Connect Sport | 105 |
+| JLL | IC400 | 35-45 |
+| Joroto | X2 | 20 |
+| LeMond | RevMaster | 75 |
+| Life Fitness | ICG 8 | 35-60 |
+| Merach | Any | 70 |
+| Peloton | Bike | 75 (90 slammed) |
+| Schwinn | IC4 | 85 |
+| Schwinn | AC | 20-40 |
+| Spinning | L7 | 20-40 |
+| Stryde | Any | 110-120 |
+| Sunny | B1805 | 35 |
+| Yesoul | S3 | 140 |
+| Yosuda | Pro | 20-40 |
+
+Complete list at [Bike Compatibility](/hardware/bike-compatibility).
+
+## 3D Printing Files
+
+### PrusaSlicer Profile
+
+A .3mf file with everything arranged for CR-10 printer is available:
+- **Printer:** CR-10 with metal hotend
+- **Nozzle:** 0.6mm
+- **Settings:** Pre-configured for optimal results
+
+<Note>
+  The PrusaSlicer profile provides a good starting point but may need adjustment for your specific printer.
+</Note>
+
+## Troubleshooting
+
+<Accordion title="Stepper motor gets hot">
+  - Check stepper driver current settings
+  - Verify TMC2209 Vref voltage
+  - Ensure adequate cooling
+  - Check for mechanical binding in gears
+</Accordion>
+
+<Accordion title="Gears skipping or noisy">
+  - Verify 11:40 tooth gear mesh alignment
+  - Check for proper gear spacing
+  - Ensure gears are printed with adequate infill
+  - Lubricate with dry lubricant if needed
+</Accordion>
+
+<Accordion title="Resistance control erratic">
+  - Test power supply voltage under load
+  - Check all solder joints for cold joints
+  - Verify ESP32 is receiving stable power
+  - Recalibrate in SmartSpin2k software
+</Accordion>
+
+<Accordion title="Can't upload firmware">
+  - Install CP2102 USB drivers
+  - Try different USB cable
+  - Hold BOOT button during upload
+  - Check COM port in Arduino IDE/PlatformIO
+</Accordion>
+
+## Customization Options
+
+### Custom Arm Lengths
+
+If standard arm lengths don't fit your bike:
+- [Thingiverse Customizer](https://www.thingiverse.com/thing:5732525)
+- Adjust arm length to your exact measurement
+- Export and print custom length
+
+### Custom Bike Mount
+
+If your bike isn't in the library:
+- [OpenSCAD Customizer](https://www.thingiverse.com/thing:5738735)
+- Measure yoke width of your head tube
+- Adjust parameters and export STL
+
+### Alternative Materials
+
+- **Cases:** Try PETG or ABS for higher temperature resistance
+- **Gears:** Print at 100% infill for maximum strength
+- **Inserts:** Use TPU for bikes with irregular knob shapes
+
+## Next Steps
+
+- Order PCB from [PCBWay](https://www.pcbway.com/project/shareproject/SmartSpin2k_PCB.html)
+- Review [Components List](/hardware/components) for sourcing
+- Check [3D Printing Guide](/hardware/3d-printing) for print settings
+- Join [Facebook Group](https://www.facebook.com/groups/716297469953492/) for support
+- Flash [Latest Firmware](/firmware/installation)

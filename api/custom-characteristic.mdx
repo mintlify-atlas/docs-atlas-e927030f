@@ -1,0 +1,402 @@
+---
+title: SmartSpin2k Custom Characteristic
+description: Proprietary BLE protocol for device configuration and control
+---
+
+## Overview
+
+The SmartSpin2k Custom Characteristic provides a proprietary protocol for reading and writing device configuration parameters over BLE. This allows mobile apps to configure settings, control the device, and monitor real-time status.
+
+## Service & Characteristic UUIDs
+
+<ParamField path="Service UUID" type="UUID">
+  `77776277-7877-7774-4466-896665500000`
+</ParamField>
+
+<ParamField path="Characteristic UUID" type="UUID">
+  `77776277-7877-7774-4466-896665500001`
+</ParamField>
+
+<ParamField path="Properties" type="flags">
+  WRITE | INDICATE | NOTIFY
+</ParamField>
+
+## Protocol Format
+
+The characteristic uses a request-response protocol with little-endian byte order.
+
+### Operation Codes
+
+<ParamField path="Read (0x01)" type="uint8_t">
+  Request to read a variable value from the device
+</ParamField>
+
+<ParamField path="Write (0x02)" type="uint8_t">
+  Request to write a value to a variable
+</ParamField>
+
+<ParamField path="Success (0x80)" type="uint8_t">
+  Server response indicating successful operation
+</ParamField>
+
+<ParamField path="Error (0xFF)" type="uint8_t">
+  Server response indicating failure or unsupported operation
+</ParamField>
+
+## Request Format
+
+### Read Request
+
+```
+Byte 0: 0x01 (read operation)
+Byte 1: Variable code
+```
+
+### Write Request
+
+```
+Byte 0: 0x02 (write operation)
+Byte 1: Variable code
+Byte 2: LSO (Least Significant Byte)
+Byte 3: MSO (Most Significant Byte)
+... additional bytes for 32-bit values or strings
+```
+
+## Response Format
+
+```
+Byte 0: 0x80 (success) or 0xFF (error)
+Byte 1: Variable code (echo)
+Byte 2: LSO (value)
+Byte 3: MSO (value)
+... additional bytes as needed
+```
+
+## Variable Codes
+
+### Configuration Variables
+
+<ParamField path="BLE_incline (0x02)" type="float">
+  Target incline percentage from app (multiplied by 10 for transmission)
+  
+  Example: 5.5% incline = 55 = `0x37 0x00`
+</ParamField>
+
+<ParamField path="BLE_simulatedWatts (0x03)" type="int">
+  Current or simulated power output in watts
+  
+  Example: 200W = `0xC8 0x00`
+</ParamField>
+
+<ParamField path="BLE_simulatedHr (0x04)" type="int">
+  Current or simulated heart rate in BPM
+  
+  Example: 75 BPM = `0x4B 0x00`
+</ParamField>
+
+<ParamField path="BLE_simulatedCad (0x05)" type="float">
+  Current or simulated cadence in RPM (multiplied by 10)
+  
+  Example: 90 RPM = 900 = `0x84 0x03`
+</ParamField>
+
+<ParamField path="BLE_simulatedSpeed (0x06)" type="float">
+  Calculated speed in km/h (multiplied by 10)
+  
+  Example: 26.3 km/h = 263 = `0x07 0x01`
+</ParamField>
+
+<ParamField path="BLE_deviceName (0x07)" type="string">
+  Device name (variable length ASCII string)
+  
+  Not fully implemented - check firmware version
+</ParamField>
+
+<ParamField path="BLE_shiftStep (0x08)" type="int">
+  Stepper motor steps per shifter button press
+</ParamField>
+
+<ParamField path="BLE_stepperPower (0x09)" type="int">
+  Stepper motor current in milliamps
+</ParamField>
+
+<ParamField path="BLE_stealthChop (0x0A)" type="bool">
+  Enable/disable TMC2208 stealthChop mode
+  
+  `0x01` = enabled, `0x00` = disabled
+</ParamField>
+
+<ParamField path="BLE_inclineMultiplier (0x0B)" type="float">
+  Multiplier for converting incline percentage to stepper steps (multiplied by 10)
+</ParamField>
+
+<ParamField path="BLE_powerCorrectionFactor (0x0C)" type="float">
+  Power calibration factor: 0.5 - 2.0 (multiplied by 10)
+  
+  Example: 1.05 = 10.5 = `0x0A 0x00` (rounded to int)
+</ParamField>
+
+### Simulation Flags
+
+<ParamField path="BLE_simulateHr (0x0D)" type="bool">
+  Enable heart rate simulation mode
+</ParamField>
+
+<ParamField path="BLE_simulateWatts (0x0E)" type="bool">
+  Enable power simulation mode
+</ParamField>
+
+<ParamField path="BLE_simulateCad (0x0F)" type="bool">
+  Enable cadence simulation mode
+</ParamField>
+
+<ParamField path="BLE_FTMSMode (0x10)" type="uint8_t">
+  Current FTMS control mode (see FTMS documentation)
+</ParamField>
+
+### System Configuration
+
+<ParamField path="BLE_autoUpdate (0x11)" type="bool">
+  Enable/disable automatic firmware updates
+</ParamField>
+
+<ParamField path="BLE_ssid (0x12)" type="string">
+  WiFi SSID (variable length)
+</ParamField>
+
+<ParamField path="BLE_password (0x13)" type="string">
+  WiFi password (variable length)
+</ParamField>
+
+<ParamField path="BLE_foundDevices (0x14)" type="string">
+  JSON string of discovered BLE devices
+</ParamField>
+
+<ParamField path="BLE_connectedPowerMeter (0x15)" type="string">
+  Name of connected power meter
+</ParamField>
+
+<ParamField path="BLE_connectedHeartMonitor (0x16)" type="string">
+  Name of connected heart rate monitor
+</ParamField>
+
+### Motor Control
+
+<ParamField path="BLE_shifterPosition (0x17)" type="int">
+  Current shifter position (read-only notification on shift events)
+</ParamField>
+
+<ParamField path="BLE_targetPosition (0x19)" type="int32_t">
+  Target motor position in steps (4 bytes, little-endian)
+  
+  Example: Position 5000 = `0x88 0x13 0x00 0x00`
+</ParamField>
+
+<ParamField path="BLE_externalControl (0x1A)" type="bool">
+  Enable external control mode - disables internal targetPosition calculation
+</ParamField>
+
+<ParamField path="BLE_syncMode (0x1B)" type="bool">
+  Enable sync mode - disables motor movement for external calibration
+  
+  When enabled, forces `stepperPosition = targetPosition` to prevent motor movement while setting parameters.
+</ParamField>
+
+### System Commands
+
+<ParamField path="BLE_saveToLittlefs (0x18)" type="bool">
+  Write `0x01` to save current configuration to flash storage
+</ParamField>
+
+<ParamField path="BLE_reboot (0x1C)" type="bool">
+  Write `0x01` to reboot the device
+</ParamField>
+
+<ParamField path="BLE_resetToDefaults (0x1D)" type="bool">
+  Write `0x01` to reset all settings to factory defaults
+</ParamField>
+
+<ParamField path="BLE_restartBLE (0x23)" type="bool">
+  Write `0x01` to disconnect and reconnect all BLE client devices
+</ParamField>
+
+<ParamField path="BLE_scanBLE (0x24)" type="bool">
+  Write `0x01` to trigger a BLE device scan
+</ParamField>
+
+### Advanced Configuration
+
+<ParamField path="BLE_stepperSpeed (0x1E)" type="int">
+  Stepper motor maximum speed
+</ParamField>
+
+<ParamField path="BLE_ERGSensitivity (0x1F)" type="float">
+  ERG mode PID sensitivity (multiplied by 10)
+</ParamField>
+
+<ParamField path="BLE_shiftDir (0x20)" type="bool">
+  Shifter direction: `0x01` = normal, `0x00` = reversed
+</ParamField>
+
+<ParamField path="BLE_minBrakeWatts (0x21)" type="int">
+  Minimum resistance power in watts
+</ParamField>
+
+<ParamField path="BLE_maxBrakeWatts (0x22)" type="int">
+  Maximum resistance power in watts
+</ParamField>
+
+<ParamField path="BLE_firmwareVer (0x25)" type="string">
+  Firmware version string (read-only)
+</ParamField>
+
+<ParamField path="BLE_resetPowerTable (0x26)" type="bool">
+  Write `0x01` to reset the power calibration table
+</ParamField>
+
+<ParamField path="BLE_powerTableData (0x27)" type="array">
+  Read/write power table row data (complex format - see source code)
+</ParamField>
+
+<ParamField path="BLE_simulatedTargetWatts (0x28)" type="int">
+  Target power for ERG mode in watts
+</ParamField>
+
+<ParamField path="BLE_simulateTargetWatts (0x29)" type="bool">
+  Enable target wattage simulation
+</ParamField>
+
+<ParamField path="BLE_hMin (0x2A)" type="int32_t">
+  Homing minimum position (4 bytes)
+</ParamField>
+
+<ParamField path="BLE_hMax (0x2B)" type="int32_t">
+  Homing maximum position (4 bytes)
+</ParamField>
+
+<ParamField path="BLE_homingSensitivity (0x2C)" type="int">
+  Sensitivity for homing detection
+</ParamField>
+
+<ParamField path="BLE_pTab4Pwr (0x2D)" type="bool">
+  Use power table for power calculation
+</ParamField>
+
+<ParamField path="BLE_UDPLogging (0x2E)" type="bool">
+  Enable/disable UDP log streaming
+</ParamField>
+
+<ParamField path="BLE_BLELogging (0x30)" type="bool/string">
+  Write: enable/disable BLE log streaming
+  
+  Read: returns last log message (string)
+</ParamField>
+
+## Usage Examples
+
+### Reading Simulated Speed
+
+**Client writes:**
+```
+0x01, 0x06
+```
+
+**Server indicates:**
+```
+0x80, 0x06, 0x07, 0x01
+```
+Decodes to: Success, simulatedSpeed, 263 (26.3 km/h)
+
+### Writing Target Incline
+
+**Client writes (set 5.5% incline):**
+```
+0x02, 0x02, 0x37, 0x00
+```
+(5.5 * 10 = 55 = 0x0037 in little-endian = 0x37, 0x00)
+
+**Server indicates:**
+```
+0x80, 0x02, 0x37, 0x00
+```
+Success confirmation
+
+### Writing Target Position (32-bit)
+
+**Client writes (set position to 5000 steps):**
+```
+0x02, 0x19, 0x88, 0x13, 0x00, 0x00
+```
+(5000 = 0x00001388 in little-endian = 0x88, 0x13, 0x00, 0x00)
+
+**Server indicates:**
+```
+0x80, 0x19, 0x88, 0x13, 0x00, 0x00
+```
+
+### Saving Configuration
+
+**Client writes:**
+```
+0x02, 0x18, 0x01
+```
+
+**Server indicates:**
+```
+0x80, 0x18
+```
+Configuration saved to flash
+
+## Data Type Conversions
+
+<Note>
+  **Important:** Float values are transmitted as integers with specific multipliers:
+  - Most floats: multiply by 10 (e.g., incline, speed, cadence)
+  - Some floats: multiply by 100 (check source code for specific variable)
+  - Booleans: `> 0x00` = true, `0x00` = false
+</Note>
+
+### Conversion Helper (JavaScript)
+
+```javascript
+function encodeFloat10(value) {
+  const intValue = Math.round(value * 10);
+  return new Uint8Array([
+    intValue & 0xFF,
+    (intValue >> 8) & 0xFF
+  ]);
+}
+
+function decodeFloat10(lsb, msb) {
+  const intValue = lsb | (msb << 8);
+  return intValue / 10.0;
+}
+
+function encodeInt32(value) {
+  return new Uint8Array([
+    value & 0xFF,
+    (value >> 8) & 0xFF,
+    (value >> 16) & 0xFF,
+    (value >> 24) & 0xFF
+  ]);
+}
+```
+
+## Notifications
+
+The characteristic automatically notifies/indicates when:
+- A shift operation is performed (shifterPosition changes)
+- Configuration values change internally
+- Response to read/write operations
+
+<Warning>
+  The characteristic uses **indicate** mode for reliable delivery. Ensure your client properly acknowledges indications.
+</Warning>
+
+## MTU Negotiation
+
+The characteristic automatically requests MTU increase to 515 bytes on client subscription to support large data transfers (e.g., power table data, log messages).
+
+## Implementation Reference
+
+See `BLE_Custom_Characteristic.cpp` in the SmartSpin2k source code for complete implementation details.

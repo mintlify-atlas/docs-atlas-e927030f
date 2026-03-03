@@ -1,0 +1,244 @@
+---
+title: Building from Source
+description: How to build SmartSpin2k firmware from source code using PlatformIO
+---
+
+This guide explains how to build the SmartSpin2k firmware from source code. Building from source allows you to customize the firmware, test development versions, or contribute to the project.
+
+## Prerequisites
+
+Before building, ensure you have completed the [Contributing Setup](/api/contributing) steps:
+
+- Visual Studio Code installed
+- PlatformIO IDE extension installed
+- Python installed
+- Project opened in PlatformIO
+
+## Build Environments
+
+SmartSpin2k uses PlatformIO with multiple build environments defined in `platformio.ini`. Each environment serves a different purpose:
+
+### Release Environment (Default)
+
+The standard production build for ESP32 hardware.
+
+```bash
+pio run -e release
+```
+
+Or simply:
+
+```bash
+pio run
+```
+
+The release environment is configured as the default in `platformio.ini`:
+
+```ini
+[platformio]
+default_envs = release
+```
+
+### Debug Environment
+
+Builds with debug symbols and additional logging enabled.
+
+```bash
+pio run -e debug
+```
+
+**Debug features:**
+- Debug symbols included
+- `__DEBUG__=1` flag enabled
+- ESP-PROG debug tool support
+- Breakpoint set at `setup()` function
+- Static code analysis with cppcheck
+
+**Code analysis settings:**
+```bash
+pio check -e debug
+```
+
+The debug environment runs cppcheck with:
+- All checks enabled
+- Medium and high severity issues reported
+- Exclusions for `.pio/` and `lib/NimBLE-Arduino/`
+
+### Native Environment
+
+Builds for native testing on your development machine (no ESP32 hardware required).
+
+```bash
+pio run -e native
+```
+
+**Use cases:**
+- Unit testing without hardware
+- Faster development iteration
+- CI/CD pipeline testing
+
+**Features:**
+- Uses ArduinoFake for Arduino API simulation
+- Static code analysis included
+- Strict compiler warnings enabled
+
+## Platform and Board Configuration
+
+SmartSpin2k targets the ESP32-DevKit-V1 board with the following configuration:
+
+**Board:** `esp32doit-devkit-v1`  
+**Framework:** Arduino + ESP-IDF  
+**Platform:** Custom ESP32 platform from pioarduino
+
+```ini
+platform = https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip
+```
+
+**Partition scheme:** `min_spiffs.csv`  
+**Filesystem:** LittleFS  
+**Upload speed:** 921600 baud  
+**Monitor speed:** 115200 baud
+
+## Building the Firmware
+
+<Steps>
+  <Step title="Open PlatformIO Terminal">
+    In Visual Studio Code, open a PlatformIO terminal:
+    - Click the PlatformIO icon in the sidebar
+    - Select "Open PlatformIO Core CLI"
+    
+    Or use the integrated terminal (Ctrl+`).
+  </Step>
+  
+  <Step title="Build the Firmware">
+    Build for the default (release) environment:
+    
+    ```bash
+    pio run
+    ```
+    
+    Or specify an environment:
+    
+    ```bash
+    pio run -e release
+    pio run -e debug
+    pio run -e native
+    ```
+  </Step>
+  
+  <Step title="Review Build Output">
+    PlatformIO will:
+    - Download dependencies (first build only)
+    - Run build-time Python scripts
+    - Compile source files
+    - Link the firmware
+    - Display memory usage statistics
+    
+    Build artifacts are placed in `.pio/build/<environment>/`
+  </Step>
+</Steps>
+
+## Build-Time Scripts
+
+The build process automatically runs several Python scripts:
+
+### Version Information
+
+**`git_tag_macro.py`** - Embeds the current git tag/version into the firmware
+
+### Build Timestamp
+
+**`build_date_macro.py`** - Adds the build date and time
+
+### Certificate Updates
+
+**`cert_updater.py`** - Updates SSL/TLS certificates
+
+These scripts run automatically during compilation and don't require manual execution.
+
+## Uploading to Hardware
+
+<Steps>
+  <Step title="Connect ESP32">
+    Connect your ESP32 board to your computer via USB.
+  </Step>
+  
+  <Step title="Upload Firmware">
+    Upload to the connected device:
+    
+    ```bash
+    pio run -e release --target upload
+    ```
+    
+    Or use the PlatformIO UI:
+    - Click the PlatformIO icon
+    - Select "Upload" under the desired environment
+  </Step>
+  
+  <Step title="Monitor Serial Output">
+    View the serial output to verify the firmware is running:
+    
+    ```bash
+    pio device monitor -e release
+    ```
+    
+    The monitor includes the ESP32 exception decoder for easier debugging.
+  </Step>
+</Steps>
+
+## Cleaning Build Artifacts
+
+To clean build artifacts and force a complete rebuild:
+
+```bash
+pio run --target clean
+```
+
+Or clean a specific environment:
+
+```bash
+pio run -e release --target clean
+```
+
+## Dependencies
+
+The project uses several external libraries, automatically managed by PlatformIO:
+
+- **esp-nimble-cpp** - Bluetooth Low Energy (BLE) stack
+- **TMCStepper** (v0.7.3) - Trinamic stepper motor driver
+- **ArduinoJson** (v7.3.1) - JSON parsing and generation
+- **FastAccelStepper** - High-performance stepper control
+- **ArduinoWebsockets** - WebSocket client/server
+
+Custom forks are used for some libraries to include SmartSpin2k-specific modifications.
+
+## Troubleshooting
+
+### Build Fails with Python Errors
+
+Ensure Python is in your PATH and all dependencies are installed:
+
+```bash
+python --version
+```
+
+### Upload Fails
+
+Check that:
+- The ESP32 is connected via USB
+- The correct COM/serial port is selected
+- No other program is using the serial port
+- The upload speed is appropriate (try lowering from 921600)
+
+### Out of Memory Errors
+
+The ESP32 has limited RAM and flash. If you encounter memory issues:
+- Review memory usage in build output
+- Optimize code and reduce dependencies
+- Check partition scheme configuration
+
+## Next Steps
+
+- Learn about [Testing](/api/testing) to verify your build
+- Review [Contributing Guidelines](/api/contributing) for code quality standards
+- See the [SS2K Wiki](https://github.com/doudar/SmartSpin2k/wiki) for flashing instructions

@@ -1,0 +1,277 @@
+---
+title: V3 Integrated PCB
+description: Hardware details for the V3 Integrated PCB version with SMT components and Peloton serial support
+---
+
+# V3 - Integrated PCB
+
+The V3 Integrated PCB is the newest SmartSpin2k hardware revision featuring a professionally manufactured PCB with SMT (Surface Mount Technology) components and native Peloton bike support.
+
+<img src="/Pictures/Version3_OnBike.jpg" alt="V3 SmartSpin2k mounted on bike" />
+
+## Overview
+
+V3 introduces a completely custom PCB with automated manufacturing capability, providing a path for DIYers to order a board and cable kit that doesn't require soldering skills. It's designed to be "print", "plug" and "play".
+
+### Key Features
+
+- **Custom Manufactured PCB** - SMT components assembled using automated techniques
+- **Peloton Serial Interface** - UART to serial driver for direct Peloton bike communication
+- **Rigid Mounting System** - More stable direct mount design
+- **Minimal Soldering** - Pre-assembled electronics, just add 3D printed parts
+- **Compact Design** - Optimized case dimensions
+- **Professional Quality** - Industrial-grade components and assembly
+
+## Specifications
+
+### Clearance Requirements
+
+- **Minimum Clearance:** 80mm between center of knob and head tube
+- **Tested Bikes:** Peloton Bike, Bowflex C6, Echelon Connect Sport, Schwinn IC4
+
+### Gear Ratio
+
+- **Drive Gears:** 11:40 tooth ratio
+- **Motor:** Stepper motor with TMC2209 driver
+
+### Electronics
+
+<Tabs>
+  <Tab title="Main Components">
+    The V3 PCB includes:
+    
+    | Component | Part Number | Function |
+    |-----------|-------------|----------|
+    | **Microcontroller** | ESP32-WROOM-32D | Main processor, WiFi/BLE |
+    | **Stepper Driver** | TMC2209-LA-T | Silent stepper motor control |
+    | **USB Bridge** | CP2102-GMR | USB to serial interface |
+    | **Serial Driver** | MAX3232 | UART to RS-232 level shifter |
+    | **Buck Converter** | TPS5430DDA | Power supply regulation |
+    | **Voltage Regulator** | LM1117-3.3 | 3.3V power regulation |
+  </Tab>
+  
+  <Tab title="Power Components">
+    | Component | Value | Package | Quantity |
+    |-----------|-------|---------|----------|
+    | **Electrolytic Caps** | 100μF (50V) | 8x10mm | 2 |
+    | **Ceramic Caps** | 10μF (50V) | 1206 | 2 |
+    | **Inductor** | Iron Core | 12x12mm H8mm | 1 |
+    | **Schottky Diodes** | D_Schottky | SMA | 2 |
+    | **Power Resistors** | 80mΩ | 1206 | 2 |
+  </Tab>
+  
+  <Tab title="Connectors">
+    | Connector | Type | Purpose |
+    |-----------|------|----------|
+    | **J1** | JST-XH 4-pin | Stepper motor |
+    | **J2** | JST-XH 4-pin | Shifter buttons |
+    | **J3** | JST-XH 8-pin | Expansion/IO |
+    | **J4** | Micro USB | Programming/power |
+    | **S1** | SPDT Switch | Power switch |
+    | **SW1, SW2** | Push buttons | Programming/reset |
+  </Tab>
+</Tabs>
+
+## Required Parts
+
+### Electronics
+
+- **V3 PCB** - Order from PCB manufacturer or purchase pre-assembled
+- **JST-XH Cables** - For stepper motor and shifter connections
+- **Micro USB Cable** - For programming and power
+- **Power Supply** - 12-24V DC (check specifications)
+
+<Warning>
+  The V3 PCB should be ordered pre-assembled from a manufacturer. Hand-soldering SMT components requires advanced skills and specialized equipment.
+</Warning>
+
+### 3D Printed Parts
+
+From the **V3 Case** directory:
+- Case body (left and right halves)
+
+From **Common Assets**:
+- [Arm](/hardware/3d-printing#arm) - Choose length for your bike (see sizing table)
+- [Bike Mount](/hardware/3d-printing#bike-mount) - Choose model for your bike
+- [Gears](/hardware/3d-printing#gears) - 11T and 40T spur gears
+- [Knob Cup](/hardware/3d-printing#knob-cups) - Standard or HEX version
+- [Insert](/hardware/3d-printing#inserts) - Specific to your bike knob
+- [Shifters](/hardware/3d-printing#shifters) - TPU shifters (optional)
+
+### Hardware
+
+- **M3 Heat-set Inserts** - M3 x 5 x 4mm (5mm diameter)
+- **M3 Screws** - M3x8 or M3x10 (4 pieces minimum)
+- **M5 Screws** - M5x12mm (1pc for arm), M5x30mm (2pc)
+- **M5 Nuts** - 3 pieces
+- **Stepper Motor** - NEMA 17 compatible with 11T gear
+
+### Optional Components
+
+- **Velcro Straps** - 1/2" wide, 8" length for secure mounting
+- **Non-slip Rubber** - 2mm adhesive-backed for bike mount
+- **VHB Tape** - Alternative to velcro for permanent mounting
+
+## Assembly Overview
+
+<Accordion title="Step 1: 3D Print All Parts">
+  Print all required parts from the V3 and Common Assets directories:
+  
+  **Print Settings:**
+  - Layer height: 0.2mm
+  - Infill: 40%
+  - Perimeters: 4
+  - Supports: Only for case halves (from bed only)
+  
+  See [3D Printing Guide](/hardware/3d-printing) for detailed instructions.
+</Accordion>
+
+<Accordion title="Step 2: Install Heat-set Inserts">
+  Install M3 x 5 x 4mm heat-set inserts into the case:
+  
+  1. Heat your soldering iron to 200-220°C
+  2. Place insert on mounting hole
+  3. Gently press insert into plastic with soldering iron tip
+  4. Let cool completely before handling
+  
+  [Video tutorial](https://www.youtube.com/watch?v=cyof7fYFcuQ)
+</Accordion>
+
+<Accordion title="Step 3: Assemble Gearbox">
+  1. Insert 11T gear onto stepper motor shaft
+  2. Place 40T gear into knob cup
+  3. Install your bike-specific insert into knob cup
+  4. Test gear meshing and rotation
+</Accordion>
+
+<Accordion title="Step 4: Install Electronics">
+  1. Connect stepper motor to J1 (JST-XH 4-pin)
+  2. Connect shifters to J2 (JST-XH 4-pin) - optional
+  3. Verify all connections are secure
+  4. Close case halves and secure with M3 screws
+</Accordion>
+
+<Accordion title="Step 5: Mount to Bike">
+  **Bike Mount Installation:**
+  1. Choose appropriate bike mount for your model
+  2. Attach mount to head tube with velcro strap or VHB tape
+  3. Ensure mount is level and secure
+  
+  **Arm Installation:**
+  1. Measure from head tube to knob center, subtract 65mm
+  2. Choose appropriate arm length from table below
+  3. Connect arm to bike mount with M5x30mm screw and nut
+  4. Connect SmartSpin2k to arm with M5x12mm screw
+  
+  **Final Positioning:**
+  1. Align knob cup with bike resistance knob
+  2. Adjust arm angle for proper engagement
+  3. Tighten all fasteners
+  4. Test rotation and resistance control
+</Accordion>
+
+## Arm Length Selection
+
+Measure from the back of head tube to center of knob, then subtract 65mm:
+
+| Bike Manufacturer | Model | Year | Arm Length (mm) |
+|-------------------|-------|------|----------------|
+| Bowflex | C6 | Any | 65 |
+| Bowflex | C7 | Any | 45 |
+| Bowflex | IC Bike SE | Any | 100 |
+| Bowflex | Velocore | Any | 150 |
+| Echelon | Connect Sport | Any | 105 |
+| Peloton | Bike | Any | 75 (90 for slammed bars) |
+| Schwinn | IC4 | Any | 85 |
+| Schwinn | AC | Any | 20-40 (mount above SS2k) |
+| Stryde | Any | Any | 110-120 |
+| Yesoul | S3 | Any | 140 (145-150 may be better) |
+
+See [Bike Compatibility](/hardware/bike-compatibility) for complete table.
+
+## Peloton Integration
+
+<Note>
+  V3 is the **only** version with native Peloton serial communication support via the MAX3232 UART to RS-232 level shifter.
+</Note>
+
+The V3 PCB includes a dedicated serial interface for Peloton bikes:
+
+- **Direct Communication** - Reads resistance data directly from Peloton
+- **Precise Control** - Better resistance tracking and adjustment
+- **No Calibration** - Uses Peloton's native resistance values
+
+**Peloton Connection:**
+1. Locate Peloton serial port (consult community guides)
+2. Connect V3 serial cable to Peloton interface
+3. Configure SmartSpin2k software for Peloton mode
+4. Test resistance control through Zwift or other apps
+
+## Ordering the PCB
+
+### Pre-assembled Kits
+
+The easiest option is to purchase a pre-assembled V3 board:
+- [SmartSpin2k.com](https://www.smartspin2k.com/purchase-kits) - Official kits
+- Includes fully assembled PCB, cables, and components
+- No soldering required
+
+### DIY Manufacturing
+
+For advanced users who want to manufacture their own:
+
+1. **Get PCB Files** - Download from `Hardware/V3 - Integrated PCB/PCB/`
+2. **Upload to Manufacturer** - JLCPCB, PCBWay, or similar
+3. **Select SMT Assembly** - Provide BOM and component placement files
+4. **Wait for Manufacturing** - Typically 1-2 weeks
+5. **Test on Arrival** - Verify all components before installation
+
+<Warning>
+  Manufacturing your own V3 PCB requires providing accurate BOM and CPL (component placement) files. Errors in these files can result in non-functional boards.
+</Warning>
+
+## Software Setup
+
+1. **Flash Firmware** - Use latest SmartSpin2k firmware
+2. **Configure WiFi** - Connect to your network
+3. **Calibrate** - Run calibration routine for your bike
+4. **Test** - Verify resistance control works correctly
+
+See [Firmware Installation](/firmware/installation) and [Configuration](/firmware/configuration) for detailed setup instructions.
+
+## Troubleshooting
+
+<Accordion title="Stepper motor not responding">
+  - Check J1 connector is fully seated
+  - Verify power supply voltage (12-24V)
+  - Test stepper motor driver (TMC2209) not overheating
+  - Check firmware configuration for correct stepper settings
+</Accordion>
+
+<Accordion title="No WiFi connection">
+  - Verify ESP32 is powered (check LED indicators)
+  - Check antenna connection
+  - Try resetting WiFi settings through web interface
+  - Reflash firmware if necessary
+</Accordion>
+
+<Accordion title="Gears slipping or grinding">
+  - Check gear mesh alignment
+  - Verify 40T gear is properly seated in knob cup
+  - Ensure insert fits snugly on bike knob
+  - Adjust arm position for better engagement angle
+</Accordion>
+
+<Accordion title="Peloton serial interface not working">
+  - Verify serial cable connections
+  - Check MAX3232 level shifter is properly soldered
+  - Confirm firmware is configured for Peloton mode
+  - Test with a known working Peloton bike
+</Accordion>
+
+## Next Steps
+
+- Review [3D Printing Guide](/hardware/3d-printing) for print settings
+- Check [Bike Compatibility](/hardware/bike-compatibility) for your specific bike
+- Join the [Facebook Community](https://www.facebook.com/groups/716297469953492/) for support
+- Download [Build Instructions PDF](https://github.com/doudar/SmartSpin2k/blob/develop/SS2kR3BuildingInstructions.pdf)

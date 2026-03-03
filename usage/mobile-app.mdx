@@ -1,0 +1,488 @@
+---
+title: 'Companion Mobile App'
+description: 'Control and configure SmartSpin2k with the iOS and Android companion app'
+icon: 'mobile'
+---
+
+## SmartSpin2k Companion App
+
+The SmartSpin2k companion app provides a native mobile experience for iOS and Android devices, offering convenient access to configuration, monitoring, and control features.
+
+<CardGroup cols={2}>
+  <Card title="iOS App" icon="apple" href="https://apps.apple.com/us/app/smartspin2k-companion-app/id6477836948">
+    Download from the Apple App Store
+  </Card>
+  
+  <Card title="Android App" icon="android" href="https://play.google.com/store/apps/details?id=com.smartspin2k.app">
+    Get it on Google Play
+  </Card>
+</CardGroup>
+
+## App Features
+
+The companion app offers the same functionality as the web interface, plus mobile-specific enhancements:
+
+### Core Features
+
+<AccordionGroup>
+  <Accordion title="Device Configuration" icon="sliders">
+    Access all SmartSpin2k settings:
+    
+    - WiFi and network settings
+    - Power and resistance calibration
+    - ERG mode sensitivity
+    - Stepper motor configuration
+    - Automatic updates
+    
+    All settings changes are saved instantly to your SmartSpin2k device.
+  </Accordion>
+  
+  <Accordion title="Real-time Monitoring" icon="chart-line">
+    View live training metrics:
+    
+    - Current power output
+    - Cadence (RPM)
+    - Heart rate (when HR monitor connected)
+    - Speed (calculated)
+    - Resistance level
+    - Connection status
+    
+    Data updates in real-time during your workout.
+  </Accordion>
+  
+  <Accordion title="Bluetooth Device Management" icon="bluetooth">
+    Scan for and connect BLE devices:
+    
+    - Power meters
+    - Heart rate monitors
+    - Cadence sensors
+    - Remote controls
+    - Other trainers
+    
+    The app displays signal strength and connection status for all paired devices.
+  </Accordion>
+  
+  <Accordion title="Manual Resistance Control" icon="gauge">
+    Control resistance during workouts:
+    
+    - Shift up/down buttons
+    - Direct position control
+    - Custom shift step configuration
+    - Real-time position feedback
+    
+    Useful for manual workouts or testing.
+  </Accordion>
+</AccordionGroup>
+
+### Mobile-Specific Advantages
+
+<CardGroup cols={2}>
+  <Card title="Push Notifications" icon="bell">
+    Receive alerts for:
+    - Firmware updates available
+    - Connection status changes
+    - Power table calibration milestones
+    - Device errors or warnings
+  </Card>
+  
+  <Card title="Touch-Optimized UI" icon="hand-pointer">
+    - Large, easy-to-tap buttons
+    - Swipe gestures for navigation
+    - Haptic feedback on actions
+    - Portrait and landscape support
+  </Card>
+  
+  <Card title="Offline Mode" icon="wifi-slash">
+    - View cached configuration
+    - Review past ride data
+    - Read help documentation
+    - Access even without connection
+  </Card>
+  
+  <Card title="Quick Actions" icon="bolt">
+    - Home screen shortcuts (iOS)
+    - Widget support (Android)
+    - Quick shift controls
+    - One-tap device connection
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+<Steps>
+  <Step title="Download the app">
+    Install the SmartSpin2k Companion App from the App Store (iOS) or Google Play (Android).
+    
+    <Tabs>
+      <Tab title="iOS">
+        <a href="https://apps.apple.com/us/app/smartspin2k-companion-app/id6477836948">
+          <img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" width="176" />
+        </a>
+        
+        **Requirements**: iOS 14.0 or later
+      </Tab>
+      
+      <Tab title="Android">
+        <a href="https://play.google.com/store/apps/details?id=com.smartspin2k.app">
+          <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="82" />
+        </a>
+        
+        **Requirements**: Android 8.0 or later
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Enable Bluetooth and WiFi">
+    Ensure both Bluetooth and WiFi are enabled on your mobile device.
+    
+    The app uses:
+    - **WiFi** to communicate with SmartSpin2k's web server
+    - **Bluetooth** (optional) for direct BLE connections
+  </Step>
+  
+  <Step title="Connect to your network">
+    Make sure your phone and SmartSpin2k are on the same WiFi network.
+    
+    The app will automatically discover SmartSpin2k devices on your network via mDNS.
+  </Step>
+  
+  <Step title="Launch the app">
+    Open the SmartSpin2k Companion App.
+    
+    The app will scan for nearby SmartSpin2k devices.
+  </Step>
+  
+  <Step title="Select your device">
+    If multiple SmartSpin2k devices are found, select yours from the list.
+    
+    Devices are identified by their configured device name (default: "SmartSpin2k").
+  </Step>
+  
+  <Step title="Explore features">
+    Navigate through the app's tabs:
+    
+    - **Home**: Quick status overview
+    - **Control**: Manual resistance adjustment
+    - **Settings**: Device configuration
+    - **Bluetooth**: Connect sensors
+    - **About**: Version info and help
+  </Step>
+</Steps>
+
+## App Navigation
+
+The companion app is organized into intuitive sections:
+
+### Home Tab
+
+The main dashboard shows:
+
+- **Device Status**: Connection state, firmware version, uptime
+- **Current Metrics**: Live power, cadence, heart rate, speed
+- **Quick Actions**: One-tap access to shift controls and common settings
+- **Recent Activity**: Last workout summary
+
+### Control Tab
+
+Manual control interface:
+
+- **Shift Up/Down Buttons**: Adjust resistance by configured step amount
+- **Position Slider**: Drag to set exact resistance level
+- **Custom Position**: Enter specific stepper position
+- **Current Values**: Real-time power, cadence, position
+
+<Warning>
+  Using manual controls during a training app session (Zwift, TrainerRoad) may conflict with automatic resistance. Use only for standalone workouts.
+</Warning>
+
+### Settings Tab
+
+Full configuration access organized by category:
+
+<Tabs>
+  <Tab title="Network">
+    - WiFi SSID
+    - WiFi Password
+    - Device Name
+    - IP Address (read-only)
+  </Tab>
+  
+  <Tab title="Resistance">
+    - Shift Amount
+    - Incline Multiplier
+    - Min Brake Watts
+    - Max Brake Watts
+  </Tab>
+  
+  <Tab title="Power">
+    - Power Multiplier
+    - ERG Sensitivity
+    - PowerTable For Power toggle
+  </Tab>
+  
+  <Tab title="Hardware">
+    - Stepper Motor Power
+    - Stepper StealthChop
+    - Stepper Direction
+    - Shifter Direction
+  </Tab>
+  
+  <Tab title="Advanced">
+    - Automatic Updates
+    - UDP Logging
+    - Factory Reset
+    - Reboot Device
+  </Tab>
+</Tabs>
+
+All settings are synced immediately with your SmartSpin2k device.
+
+### Bluetooth Tab
+
+BLE device scanning and management:
+
+1. **Tap "Scan"** to search for nearby devices
+2. **View discovered devices** with signal strength indicators
+3. **Tap to connect** power meters, heart rate monitors, cadence sensors
+4. **Monitor connection status** with real-time indicators
+5. **Disconnect** when needed by tapping connected devices
+
+<Note>
+  The app connects BLE devices **to SmartSpin2k**, not to your phone directly. SmartSpin2k then relays the data to training apps.
+</Note>
+
+### About Tab
+
+Help and information:
+
+- **App Version**: Current app version number
+- **Firmware Version**: SmartSpin2k firmware version
+- **Help & Support**: Links to documentation, GitHub, and Facebook group
+- **Open Source Licenses**: Attribution for open-source components
+
+## App vs. Web Interface
+
+Both the app and web interface provide similar functionality, but each has advantages:
+
+<Tabs>
+  <Tab title="Mobile App Advantages">
+    ✅ **Native mobile experience**
+    - Faster, more responsive UI
+    - Better touch controls
+    - Haptic feedback
+    
+    ✅ **Convenience features**
+    - Push notifications
+    - Home screen shortcuts
+    - Offline documentation
+    
+    ✅ **Device discovery**
+    - Automatic SmartSpin2k discovery
+    - No need to remember IP address
+    
+    ❌ **Limitations**
+    - Requires app installation
+    - Platform-specific (iOS/Android only)
+  </Tab>
+  
+  <Tab title="Web Interface Advantages">
+    ✅ **Universal access**
+    - Works on any device with a browser
+    - No installation required
+    - Desktop and mobile support
+    
+    ✅ **Developer tools**
+    - Advanced debugging features
+    - File system browser
+    - BLE simulator
+    
+    ✅ **Always available**
+    - Direct IP access
+    - No app store dependencies
+    
+    ❌ **Limitations**
+    - Requires manual URL entry
+    - Less mobile-optimized
+    - No push notifications
+  </Tab>
+</Tabs>
+
+<Tip>
+  Use the mobile app for everyday configuration and monitoring, and the web interface for advanced troubleshooting and development.
+</Tip>
+
+## Using the App During Workouts
+
+### Companion Display
+
+Keep the app open during Zwift/TrainerRoad sessions to:
+
+- **Monitor SmartSpin2k status**: Ensure proper operation
+- **View detailed metrics**: See exact stepper position and ERG mode state
+- **Troubleshoot issues**: Quickly check connection status if problems occur
+- **Manual override**: Take control if automatic resistance fails
+
+### Split-Screen Mode (Android)
+
+On Android devices, use split-screen to show both the training app and SmartSpin2k Companion App:
+
+<Steps>
+  <Step title="Open both apps">
+    Launch Zwift (or your training app) and the SmartSpin2k Companion App.
+  </Step>
+  
+  <Step title="Enable split-screen">
+    Tap the Recent Apps button and drag one app to the top or bottom half.
+  </Step>
+  
+  <Step title="Resize windows">
+    Adjust the divider to give more space to your training app.
+  </Step>
+  
+  <Step title="Monitor during workout">
+    Glance at the SmartSpin2k app to check status without leaving Zwift.
+  </Step>
+</Steps>
+
+<Note>
+  iOS does not support split-screen for third-party apps on iPhone. iPad users can use Split View or Slide Over.
+</Note>
+
+## Troubleshooting App Issues
+
+### App can't find SmartSpin2k
+
+<AccordionGroup>
+  <Accordion title="Check WiFi network">
+    Ensure your phone and SmartSpin2k are on the same WiFi network.
+    
+    - Open WiFi settings on your phone
+    - Verify you're connected to the correct network
+    - Check SmartSpin2k's web interface to confirm its network
+  </Accordion>
+  
+  <Accordion title="Manually enter IP address">
+    If auto-discovery fails, manually enter SmartSpin2k's IP address:
+    
+    1. Find the IP in your router's DHCP client list
+    2. Open the app's settings
+    3. Tap "Manual Connection"
+    4. Enter the IP address
+  </Accordion>
+  
+  <Accordion title="Check mDNS support">
+    Some networks block mDNS (especially corporate or guest networks).
+    
+    Switch to a home network or use manual IP entry.
+  </Accordion>
+  
+  <Accordion title="Restart app and device">
+    Force quit the app and restart it.
+    
+    If that doesn't work, reboot SmartSpin2k from the web interface.
+  </Accordion>
+</AccordionGroup>
+
+### Settings changes not saving
+
+- **Check connection**: Ensure stable WiFi connection
+- **Wait for confirmation**: Look for save confirmation message
+- **Verify web interface**: Check if changes appear in the web interface
+- **Update app**: Ensure you're running the latest app version
+
+### Bluetooth devices not appearing
+
+- **Enable Bluetooth**: Ensure Bluetooth is on for your phone
+- **Wake up sensors**: Spin pedals or activate heart rate monitor
+- **Move closer**: Reduce distance to BLE devices during scan
+- **Check compatibility**: Verify devices use standard BLE services (CPS, HRM, CSC)
+
+### App crashes or freezes
+
+- **Update app**: Check App Store/Google Play for updates
+- **Clear cache**: (Android) Settings > Apps > SmartSpin2k > Clear Cache
+- **Reinstall app**: Delete and reinstall from app store
+- **Report bug**: Contact developers via GitHub or Facebook group
+
+## App Source Code
+
+The SmartSpin2k Companion App is open source:
+
+**GitHub Repository**: [SS2kConfigApp](https://github.com/doudar/SS2kConfigApp/tree/develop)
+
+<Info>
+  Developers can contribute to the app or build custom versions. The app is built using React Native for cross-platform compatibility.
+</Info>
+
+### Building from Source
+
+If you want to build the app yourself:
+
+```bash
+# Clone the repository
+git clone https://github.com/doudar/SS2kConfigApp.git
+cd SS2kConfigApp
+
+# Install dependencies
+npm install
+
+# Run on iOS simulator
+npx react-native run-ios
+
+# Run on Android emulator
+npx react-native run-android
+```
+
+See the repository's README for detailed build instructions.
+
+## Feature Requests and Bug Reports
+
+To request new app features or report bugs:
+
+<Steps>
+  <Step title="Check existing issues">
+    Visit the [SS2kConfigApp Issues](https://github.com/doudar/SS2kConfigApp/issues) page to see if someone else has already reported the issue.
+  </Step>
+  
+  <Step title="Create new issue">
+    If not found, create a new issue with:
+    - Clear description of the problem or feature
+    - Steps to reproduce (for bugs)
+    - Device model and OS version
+    - App version number
+    - SmartSpin2k firmware version
+  </Step>
+  
+  <Step title="Community discussion">
+    Join the [SmartSpin2k Facebook Group](https://www.facebook.com/groups/716297469953492/) to discuss with other users and developers.
+  </Step>
+</Steps>
+
+## Privacy and Data Collection
+
+<Info>
+  The SmartSpin2k Companion App does **not** collect or transmit any personal data, workout data, or usage analytics.
+</Info>
+
+All communication happens locally between your phone and SmartSpin2k device:
+- Configuration changes are sent directly to SmartSpin2k via WiFi
+- No data is sent to external servers
+- No telemetry or crash reports are collected
+- All data remains on your local network
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="Web Interface" icon="browser" href="/usage/web-interface">
+    Access SmartSpin2k via web browser
+  </Card>
+  <Card title="Connecting to Zwift" icon="bluetooth" href="/usage/connecting-to-zwift">
+    Set up SmartSpin2k with training apps
+  </Card>
+  <Card title="Power Calibration" icon="sliders" href="/usage/power-calibration">
+    Calibrate power settings in the app
+  </Card>
+  <Card title="ERG Mode" icon="gauge" href="/usage/erg-mode">
+    Monitor and adjust ERG mode via the app
+  </Card>
+</CardGroup>

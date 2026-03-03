@@ -1,0 +1,166 @@
+---
+title: Firmware Installation
+description: Flash SmartSpin2k firmware to your ESP32 device
+---
+
+## Overview
+
+SmartSpin2k firmware runs on ESP32 microcontrollers (specifically the ESP32-DOIT-DevKit-V1 board). This guide covers flashing the firmware to your device for the first time or updating existing installations.
+
+## Hardware Requirements
+
+- **ESP32 Board**: ESP32-DOIT-DevKit-V1
+- **USB Cable**: USB-A to Micro-USB for programming
+- **Computer**: Windows, macOS, or Linux with USB port
+
+## Hardware Revisions
+
+SmartSpin2k automatically detects your hardware revision on boot:
+
+- **Revision 1**: Original hardware version
+- **Revision 2**: Current hardware version with improved stepper control
+
+The firmware reads pin 34 (REV_PIN) to determine which revision you have and configures pins accordingly.
+
+## Installation Methods
+
+### Method 1: Pre-built Firmware (Recommended)
+
+<Steps>
+  <Step title="Download Firmware">
+    Download the latest `firmware.bin` file from the [SmartSpin2k OTA Updates repository](https://github.com/doudar/OTAUpdates).
+  </Step>
+
+  <Step title="Install Flashing Tool">
+    Install the ESP32 flashing tool for your platform:
+
+    **Option A: esptool (Cross-platform)**
+    ```bash
+    pip install esptool
+    ```
+
+    **Option B: ESP32 Flash Download Tool (Windows)**
+    Download from [Espressif's website](https://www.espressif.com/en/support/download/other-tools)
+  </Step>
+
+  <Step title="Connect ESP32">
+    Connect your ESP32 to your computer via USB. Note the serial port:
+    
+    - **Windows**: `COM3`, `COM4`, etc.
+    - **macOS**: `/dev/cu.usbserial-*`
+    - **Linux**: `/dev/ttyUSB0` or `/dev/ttyACM0`
+  </Step>
+
+  <Step title="Flash Firmware">
+    Flash the firmware using esptool:
+
+    ```bash
+    esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 \
+      write_flash -z 0x10000 firmware.bin
+    ```
+
+    Replace `/dev/ttyUSB0` with your actual serial port.
+
+    <Note>
+    The upload speed is set to 921600 baud as configured in platformio.ini:10. If you experience issues, try a lower baud rate like 115200.
+    </Note>
+  </Step>
+
+  <Step title="Monitor Boot">
+    Open a serial monitor to verify successful boot:
+
+    ```bash
+    esptool.py --port /dev/ttyUSB0 --baud 115200 monitor
+    ```
+
+    You should see initialization messages including:
+    - Board revision detection
+    - LittleFS filesystem mounting
+    - WiFi initialization
+    - BLE service startup
+  </Step>
+</Steps>
+
+### Method 2: Build from Source
+
+See the [Development](/firmware/development) guide for instructions on building and flashing from source with PlatformIO.
+
+## First Boot Configuration
+
+After flashing firmware for the first time:
+
+<Steps>
+  <Step title="Access WiFi Access Point">
+    The device creates a WiFi access point:
+    
+    - **SSID**: `SmartSpin2k` (or your configured device name)
+    - **Password**: `password` (default)
+
+    Connect to this network from your phone or computer.
+  </Step>
+
+  <Step title="Open Web Interface">
+    Navigate to `http://192.168.4.1` in your browser to access the configuration interface.
+  </Step>
+
+  <Step title="Configure WiFi">
+    Enter your home WiFi credentials in the settings page. The device will attempt to connect on next reboot.
+  </Step>
+</Steps>
+
+## Partition Scheme
+
+SmartSpin2k uses a custom partition scheme defined in `min_spiffs.csv`:
+
+- **Filesystem**: LittleFS (for configuration and web files)
+- **OTA Updates**: Dual partition scheme for safe over-the-air updates
+- **Boot Partition**: Automatically managed by ESP-IDF OTA system
+
+<Warning>
+Do not manually modify partition tables after initial installation, as this can corrupt stored configuration and power calibration data.
+</Warning>
+
+## Verification
+
+After successful installation, verify:
+
+1. **Serial Output**: Device boots without errors
+2. **LED Indicator**: Pin 2 LED should blink during operation
+3. **WiFi Connection**: Device creates AP or connects to your network
+4. **BLE Advertisement**: Device appears as "SmartSpin2k" in Bluetooth scanners
+5. **Web Interface**: Accessible at device IP address
+
+## Troubleshooting
+
+### Flash Failed
+
+- **Hold BOOT button** during flashing if automatic reset fails
+- **Lower baud rate** to 115200 or 460800
+- **Try different USB cable** (must support data transfer)
+- **Check driver installation** for CH340 or CP2102 USB-UART chip
+
+### Boot Loop
+
+- **Erase flash** completely before reflashing:
+  ```bash
+  esptool.py --port /dev/ttyUSB0 erase_flash
+  ```
+- Check serial monitor for error messages
+- Verify power supply provides adequate current (500mA minimum)
+
+### No WiFi AP
+
+- Wait 10 seconds after boot for WiFi initialization
+- Check serial output for WiFi errors
+- Device falls back to AP mode if STA connection fails after timeout
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/firmware/configuration">
+    Configure WiFi, stepper motors, and device settings
+  </Card>
+  <Card title="OTA Updates" icon="cloud-arrow-up" href="/firmware/ota-updates">
+    Set up automatic firmware updates over WiFi
+  </Card>
+</CardGroup>

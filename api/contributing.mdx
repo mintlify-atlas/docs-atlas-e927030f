@@ -1,0 +1,146 @@
+---
+title: Contributing to SmartSpin2k
+description: Guidelines for contributing to the SmartSpin2k firmware project
+---
+
+Thank you for your interest in contributing to SmartSpin2k! This guide will help you set up your development environment and understand the contribution workflow.
+
+## Development Environment Setup
+
+<Steps>
+  <Step title="Install Visual Studio Code">
+    Download and install [Visual Studio Code](https://code.visualstudio.com/) for your platform.
+  </Step>
+  
+  <Step title="Install PlatformIO">
+    Install the [PlatformIO IDE extension](https://platformio.org/platformio-ide) into Visual Studio Code. This provides the build system and tools for ESP32 development.
+  </Step>
+  
+  <Step title="Install Python">
+    Download and install [Python](https://www.python.org/downloads/) if you don't already have it installed.
+  </Step>
+  
+  <Step title="Install Pre-commit">
+    Install the pre-commit framework to ensure code quality:
+    
+    ```bash
+    py -m pip install pre-commit
+    ```
+  </Step>
+  
+  <Step title="Configure Pre-commit Path">
+    Follow any installation warnings to add pre-commit to your system PATH.
+  </Step>
+  
+  <Step title="Install Git Hooks">
+    Set up the pre-push git hooks to validate your code before pushing:
+    
+    ```bash
+    pre-commit install --hook-type pre-push
+    ```
+  </Step>
+  
+  <Step title="Open the Project">
+    Open the SmartSpin2k project folder in PlatformIO (Visual Studio Code).
+  </Step>
+</Steps>
+
+## Pre-commit Hooks
+
+The project uses pre-commit hooks to automatically enforce code quality standards. The hooks run before pushing code to the repository.
+
+### License Header Enforcement
+
+All source files (`.h`, `.hpp`, `.c`, `.cpp`, etc.) must include the proper license header:
+
+```cpp
+/*
+ * Copyright (C) 2020  Anthony Doud & Joel Baranick
+ * All rights reserved
+ *
+ * SPDX-License-Identifier: GPL-2.0-only
+ */
+```
+
+The pre-commit hook automatically inserts this header if it's missing.
+
+### Excluded Files
+
+The following directories are excluded from pre-commit checks:
+- `.pio/` - PlatformIO build artifacts
+- `lib/NimBLE-Arduino/` - Third-party Bluetooth library
+- `lib/ArduinoCompat/` - Arduino compatibility layer
+
+## Code Quality Guidelines
+
+### Build Flags
+
+The project uses several build-time Python scripts that run during compilation:
+
+- `git_tag_macro.py` - Embeds the current git tag/version
+- `build_date_macro.py` - Adds build timestamp
+- `cert_updater.py` - Updates SSL certificates
+
+These are automatically executed by PlatformIO during the build process.
+
+### C++ Standard
+
+The project uses C++17 standard (`-std=gnu++17`). Make sure your code is compatible with this standard.
+
+## Making Contributions
+
+<Steps>
+  <Step title="Fork the Repository">
+    Create a fork of the SmartSpin2k repository on GitHub.
+  </Step>
+  
+  <Step title="Create a Branch">
+    Create a feature branch for your changes:
+    
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+  </Step>
+  
+  <Step title="Make Your Changes">
+    Implement your feature or bug fix. Make sure to:
+    - Follow the existing code style
+    - Add tests if applicable
+    - Update documentation as needed
+  </Step>
+  
+  <Step title="Test Your Changes">
+    Build and test your changes using PlatformIO. See [Testing](/api/testing) for more details.
+  </Step>
+  
+  <Step title="Commit Your Changes">
+    Commit your changes with clear, descriptive commit messages:
+    
+    ```bash
+    git add .
+    git commit -m "Add feature: description of your changes"
+    ```
+  </Step>
+  
+  <Step title="Push and Create PR">
+    Push your changes and create a pull request:
+    
+    ```bash
+    git push origin feature/your-feature-name
+    ```
+    
+    The pre-commit hooks will run automatically before the push.
+  </Step>
+</Steps>
+
+## Getting Help
+
+- Join the [SmartSpin2k Facebook Group](https://www.facebook.com/groups/716297469953492/) for community support
+- Check the [SS2K Wiki](https://github.com/doudar/SmartSpin2k/wiki) for detailed documentation
+- Review the [GitHub Issues](https://github.com/doudar/SmartSpin2k/issues) for known problems and feature requests
+
+## License
+
+By contributing to SmartSpin2k, you agree that your contributions will be licensed under:
+- **Software**: [GNU General Public License Version 2](https://github.com/doudar/SmartSpin2k/blob/develop/LICENSE)
+- **Hardware**: [CERN Open Hardware License Version 2 - Permissive](https://github.com/doudar/SmartSpin2k/blob/develop/Hardware/LICENSE)

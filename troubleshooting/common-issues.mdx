@@ -1,0 +1,212 @@
+---
+title: 'Common Issues & FAQ'
+description: 'Frequently asked questions and common problems with SmartSpin2k'
+icon: 'circle-question'
+---
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="Device won't connect to WiFi">
+    **Symptoms:** Device creates its own access point instead of connecting to your network.
+
+    **Solutions:**
+    
+    1. **Check WiFi credentials**: Verify your SSID and password are correct in the configuration
+    2. **WiFi timeout**: The device tries STA mode for 10 seconds (WIFI_CONNECT_TIMEOUT) before falling back to AP mode
+    3. **Signal strength**: Ensure your SmartSpin2k is within range of your WiFi router
+    4. **Network compatibility**: SmartSpin2k requires 2.4GHz WiFi networks (5GHz is not supported on ESP32)
+
+    **Default WiFi Settings:**
+    - Default device name: `SmartSpin2k`
+    - Default password: `password`
+    
+    <Tip>
+      If you need to reset WiFi settings, hold both shifter buttons during boot to reset to factory defaults.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Stepper motor not moving">
+    **Symptoms:** Motor doesn't respond to commands or shifts.
+
+    **Check these items:**
+    
+    1. **Power supply**: Ensure adequate power (12V recommended)
+    2. **Enable pin**: Motor is disabled when not in use for power savings
+    3. **Stepper driver**: Verify TMC2209 (Rev 2) or TMC2208 (Rev 1) is properly connected
+    4. **Serial communication**: Check RX/TX pins between ESP32 and stepper driver
+       - Rev 1: RX=14, TX=12
+       - Rev 2: RX=18, TX=19
+    5. **Travel limits**: Motor won't move beyond configured min/max positions
+
+    <Warning>
+      If the motor feels hot or makes grinding noises, reduce stepper power. Default is 900mA (DEFAULT_STEPPER_POWER).
+    </Warning>
+  </Accordion>
+
+  <Accordion title="ERG mode not working properly">
+    **Symptoms:** Resistance doesn't match target power, or motor moves erratically.
+
+    **Requirements for ERG mode:**
+    
+    - Connected power meter OR simulated power enabled
+    - Cadence reading > MIN_ERG_CADENCE (30 RPM)
+    - FTMS mode set to SetTargetPower
+    - Device must be homed (min/max positions set)
+
+    **Common fixes:**
+    
+    1. **Calibrate power table**: ERG mode uses a power table that builds over time. Initial rides may be less accurate.
+    2. **Check ERG sensitivity**: Default is 3.0 (ERG_SENSITIVITY). Adjust in settings if response is too aggressive or sluggish.
+    3. **Verify shift step**: Default 1200 steps. Should result in approximately 30W change per shift (WATTS_PER_SHIFT).
+    4. **Power correction factor**: Adjust between 0.5 and 2.5 (MIN_PCF to MAX_PCF) to calibrate power readings.
+
+    <Tip>
+      Use the power table feature (pTab4Pwr) for more consistent power readings once calibrated.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Device reboots unexpectedly">
+    **Symptoms:** SmartSpin2k restarts during use or when idle.
+
+    **Common causes:**
+    
+    1. **Inactivity timeout**: Device reboots after 30 minutes of no activity (1800000ms)
+       - This is by design to prevent memory leaks
+       - Activity = changes in HR, watts, or target incline
+    2. **Power supply issues**: Insufficient or unstable power can cause brownouts
+    3. **Firmware update**: Auto-update is enabled by default (AUTO_FIRMWARE_UPDATE)
+    4. **Memory issues**: Check free heap if running custom firmware
+
+    **Preventing unwanted reboots:**
+    
+    - Ensure stable power supply
+    - Disable auto-update if you want manual control
+    - Keep device activity (even minimal cadence prevents timeout)
+  </Accordion>
+
+  <Accordion title="Configuration not saving">
+    **Symptoms:** Settings revert after reboot.
+
+    **Troubleshooting steps:**
+    
+    1. **LittleFS filesystem**: Check if filesystem is mounted correctly
+       - Config saved to `/config.txt`
+       - Power table saved to `/PowerTable.txt`
+    2. **Filesystem corruption**: Device will auto-format if mount fails
+    3. **Save flag**: Configuration saves are triggered by a flag (ss2k->saveFlag)
+    4. **Available space**: Check LittleFS has free space
+       - Total space varies by partition
+       - Config JSON size: 2000 bytes + DEBUG_LOG_BUFFER_SIZE
+
+    <Tip>
+      You can manually trigger a save from the web interface or by making any configuration change.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Shifter buttons not responding">
+    **Symptoms:** Physical buttons don't register shifts.
+
+    **Check these items:**
+    
+    1. **Debounce delay**: Default 200ms (DEBOUNCE_DELAY). May need adjustment if buttons are worn.
+    2. **Pin configuration**:
+       - Rev 1: Up=19, Down=18
+       - Rev 2: Up=26, Down=32
+    3. **Pull-up resistors**: Buttons use INPUT_PULLUP mode
+    4. **Button direction**: Check shifterDir setting if buttons are reversed
+    5. **Special function**: Holding both buttons during boot resets to defaults
+
+    **Testing:**
+    
+    Monitor shifter position in logs or web interface to verify button detection.
+  </Accordion>
+
+  <Accordion title="Temperature throttling">
+    **Symptoms:** Motor power reduces during long sessions.
+
+    **What's happening:**
+    
+    SmartSpin2k monitors ESP32 temperature and reduces stepper motor current when temperature exceeds 90°C (THROTTLE_TEMP).
+
+    **Solutions:**
+    
+    1. **Improve ventilation**: Ensure airflow around the device
+    2. **Reduce stepper power**: Lower from default 900mA if not needed
+    3. **Check ambient temperature**: Device may need cooling in hot environments
+    4. **Duty cycle**: Consider reducing continuous operation time
+
+    <Warning>
+      Temperature throttling is a protective feature. Don't disable it as it prevents hardware damage.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Power readings inaccurate">
+    **Symptoms:** Reported watts don't match perceived effort.
+
+    **Calibration options:**
+    
+    1. **Power correction factor**: Multiply raw readings by 0.5-2.5x
+       - Adjust in web interface settings
+       - Default is 1.0 (no correction)
+    2. **Build power table**: Ride consistently to populate lookup table
+       - Requires 10 similar power samples (POWER_SAMPLES) per table entry
+       - Table size: 30 watt increments × 10 cadence increments
+    3. **Connected power meter**: Use external power meter for accurate readings
+    4. **Bike-specific settings**: Some bikes (Peloton, Echelon) have specific resistance ranges
+
+    <Tip>
+      Enable pTab4Pwr mode after building a comprehensive power table for the most accurate power estimates.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Quick Diagnostics
+
+### Check System Status
+
+You can view detailed system information through:
+- **Web interface**: Connect to device IP or `SmartSpin2k.local`
+- **BLE logs**: Enable BLE logging in settings
+- **Serial monitor**: Connect via USB (115200 baud) to see detailed logs
+
+### Factory Reset
+
+<Warning>
+  This will erase all configuration and calibration data!
+</Warning>
+
+To reset SmartSpin2k to factory defaults:
+
+1. Power off the device
+2. Hold both shifter buttons (up and down)
+3. Power on while holding buttons
+4. Wait for rapid LED blinking (10 fast blinks)
+5. Device will format filesystem and restart
+
+### Firmware Update
+
+SmartSpin2k checks for updates on boot when connected to WiFi:
+- Update URL: `https://raw.githubusercontent.com/doudar/OTAUpdates/main/`
+- Version file: `version.txt`
+- Binary file: `firmware.bin`
+
+To disable auto-update, change the `autoUpdate` setting in configuration.
+
+## Getting More Help
+
+If you're still experiencing issues:
+
+1. **Check the logs**: Enable detailed logging to identify specific errors
+2. **Community support**: Visit the [SmartSpin2k Facebook Group](https://www.facebook.com/groups/716297469953492/)
+3. **GitHub issues**: Report bugs at the [SmartSpin2k repository](https://github.com/doudar/SmartSpin2k)
+4. **Documentation**: Review the [SmartSpin2k Wiki](https://github.com/doudar/SmartSpin2k/wiki)
+
+<Tip>
+  When reporting issues, include:
+  - Hardware revision (Rev 1 or Rev 2)
+  - Firmware version
+  - Serial monitor logs
+  - Configuration settings
+  - Steps to reproduce
+</Tip>

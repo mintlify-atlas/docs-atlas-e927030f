@@ -1,0 +1,598 @@
+---
+title: Calibration Guide
+description: Initial calibration procedures for SmartSpin2k including homing and power table setup
+---
+
+Calibration is essential for accurate resistance control and power measurement. SmartSpin2k uses sensorless homing with the TMC2209 stepper driver to automatically find travel limits and build a power table for your specific bike.
+
+## Prerequisites
+
+<Warning>
+Before calibrating, ensure:
+- Assembly is complete and tested
+- Wiring is correct and verified
+- SmartSpin2k is properly mounted to bike
+- You can access the web interface
+- TMC2209 stepper driver (Revision 2) for sensorless homing
+</Warning>
+
+## Calibration Overview
+
+SmartSpin2k calibration involves three main processes:
+
+1. **Sensorless Homing**: Finds minimum and maximum travel limits using stallGuard
+2. **Power Table Generation**: Maps resistance positions to power output
+3. **Configuration Adjustment**: Fine-tunes sensitivity and performance
+
+## Hardware Requirements for Homing
+
+Sensorless homing requires specific hardware:
+
+- **TMC2209 stepper driver** (Revision 2 boards only)
+- **Hardware Revision 2**: Auto-detected via pin 34 reading 4095
+- Revision 1 boards with TMC2208 do **not** support automatic homing
+
+Reference: `src/Main.cpp:824-828`
+
+```cpp
+if (!stepper || currentBoard.name != r2_NAME) {
+  SS2K_LOG(MAIN_LOG_TAG, "Homing not supported or stepper not initialized.");
+  return;
+}
+```
+
+## Sensorless Homing Process
+
+### How Sensorless Homing Works
+
+The TMC2209's stallGuard feature monitors back-EMF to detect when the stepper motor stalls against a mechanical stop. SmartSpin2k uses this to find the minimum and maximum knob positions.
+
+**StallGuard Operation**:
+1. Motor runs at reduced power (80% of configured power)
+2. Driver samples SG_RESULT register (motor load indicator)
+3. Baseline threshold established during free movement
+4. When motor hits mechanical stop, SG_RESULT drops significantly
+5. Stall detected when SG_RESULT < (threshold - sensitivity)
+
+Reference: `src/Main.cpp:655` and `settings.h:74`
+
+### Homing Parameters
+
+| Parameter | Value | Location |
+|-----------|-------|----------|
+| Default Sensitivity | 50 | `settings.h:353` |
+| Power Scaler | 0.8 (80%) | `settings.h:74` |
+| Speed | 1500 steps/s | `src/Main.cpp:656` |
+| Timeout | 60000ms (60s) | HOME_TIMEOUT |
+| Samples to Average | 16 | `src/Main.cpp:651` |
+
+### Initiating Homing
+
+<Steps>
+  <Step title="Access web interface">
+    - Connect to SmartSpin2k WiFi network or local network
+    - Navigate to device IP address in web browser
+    - Log in if authentication is enabled
+  </Step>
+
+  <Step title="Prepare for homing">
+    - Ensure bike is not being pedaled
+    - Verify knob is not at extreme positions
+    - Clear any obstructions from knob movement
+    - Be ready to manually abort if needed
+  </Step>
+
+  <Step title="Start homing procedure">
+    In the web interface:
+    - Navigate to Settings or Configuration page
+    - Find "Homing" or "Calibration" section
+    - Click "Start Homing" or "Calibrate"
+    - For full calibration, enable "Both Directions" option
+  </Step>
+
+  <Step title="Monitor homing process">
+    The device will:
+    1. Move to find minimum position (softest resistance)
+    2. Set minimum as position 0
+    3. If "Both Directions" enabled, find maximum position
+    4. Save calibration data to flash memory
+    
+    **Expected duration**: 30-120 seconds depending on your bike's range
+  </Step>
+</Steps>
+
+### Homing Sequence Details
+
+#### Finding Minimum Position
+
+Reference: `src/Main.cpp:830-840`
+
+```cpp
+// Move away from min-stop in case already there
+stepper->move(userConfig->getShiftStep(), true);
+// Find end stop
+_findEndStop(false);  // false = backward (minimum)
+// Double tap for accuracy
+stepper->move(userConfig->getShiftStep(), true);
+_findEndStop(false);
+// Back off slightly and set as zero
+stepper->move(userConfig->getShiftStep(), true);
+stepper->setCurrentPosition(0);
+rtConfig->setMinStep(0);
+```
+
+#### Finding Maximum Position (Optional)
+
+Reference: `src/Main.cpp:842-850`
+
+When "Both Directions" is enabled:
+
+```cpp
+// Find max end stop
+_findEndStop(true);  // true = forward (maximum)
+// Double tap for accuracy
+stepper->move(-userConfig->getShiftStep(), true);
+_findEndStop(true);
+// Set max position minus shift step
+rtConfig->setMaxStep(stepper->getCurrentPosition() - userConfig->getShiftStep());
+```
+
+### Aborting Homing
+
+You can abort the homing process at any time:
+
+- **Press shifter button**: Touching either shift button during homing aborts the process
+- **Timeout**: Homing automatically aborts after 60 seconds
+- **Power cycle**: Turning off the device stops homing (data not saved)
+
+Reference: `src/Main.cpp:681-687`
+
+## Homing Sensitivity Adjustment
+
+The homing sensitivity parameter controls how much the SG_RESULT must drop to detect a stall.
+
+### Default Sensitivity
+
+- **Value**: 50
+- **Range**: Typically 20-100
+- **Effect**: Lower = more sensitive (detects lighter contact), Higher = less sensitive (requires harder stall)
+
+### When to Adjust Sensitivity
+
+**Increase sensitivity (higher value)** if:
+- Homing completes prematurely (before reaching actual stop)
+- False stall detections during normal operation
+- Very stiff or high-friction knob
+
+**Decrease sensitivity (lower value)** if:
+- Homing times out without detecting stop
+- Motor pushes too hard against mechanical stop
+- Concerned about mechanical wear
+
+### Adjusting Sensitivity
+
+<Steps>
+  <Step title="Access configuration">
+    In the web interface:
+    - Navigate to Settings
+    - Find "Homing Sensitivity" parameter
+    - Current value displayed (default: 50)
+  </Step>
+
+  <Step title="Modify value">
+    - Start with ±10 from current value
+    - Save changes
+    - Re-run homing procedure
+    - Observe behavior and adjust further if needed
+  </Step>
+
+  <Step title="Validate setting">
+    Good homing behavior:
+    - Detects stop reliably
+    - Doesn't push excessively hard
+    - Repeatable results across multiple homing cycles
+    - Logged SG drop is clear and consistent
+  </Step>
+</Steps>
+
+### Monitoring Homing in Logs
+
+During homing, the serial log shows:
+
+```
+Homing backward (min). Stable Threshold: 250, Sensitivity: 50
+Homing... Current SG: 245, Baseline: 250, Target: < 200
+Stall detected! SG dropped to 195. Threshold: 200
+```
+
+Reference: `src/Main.cpp:675-706`
+
+## FTMS Device Homing
+
+If you have a FTMS-compatible bike (Peloton, Echelon, etc.) that reports resistance values, SmartSpin2k can use those values instead of sensorless homing.
+
+### FTMS Homing Process
+
+<Steps>
+  <Step title="Connect FTMS device">
+    - Pair SmartSpin2k with your FTMS bike via BLE
+    - Verify resistance values appear in web interface
+    - Ensure bike reports minimum and maximum resistance
+  </Step>
+
+  <Step title="Run FTMS homing">
+    Homing automatically uses FTMS if:
+    - Resistance is not simulated (`!rtConfig->resistance.getSimulate()`)
+    - Power meter is connected (not NONE)
+    - Maximum resistance > 0
+    
+    The system will:
+    1. Command bike to minimum resistance
+    2. Wait for resistance to stabilize
+    3. Record position as minimum
+    4. Command bike to maximum resistance
+    5. Record position as maximum
+  </Step>
+
+  <Step title="Validate FTMS homing">
+    - Minimum and maximum resistance values saved
+    - Travel limits correspond to reported resistance range
+    - Resistance changes track consistently with stepper position
+  </Step>
+</Steps>
+
+**FTMS Resistance Ranges**:
+
+- **Peloton**: 5-98 (configured in `settings.h:107-112`)
+- **Echelon**: 5-30 (configured in `settings.h:115-120`)
+- **Default**: 2000 steps if no bike connected (`settings.h:123`)
+
+Reference: `src/Main.cpp:816-822`
+
+## Power Table Calibration
+
+The power table maps stepper positions to power output at various cadences. This enables accurate ERG mode and power-based training.
+
+### Power Table Structure
+
+- **Dimensions**: 30 watts × 10 cadence (2D lookup table)
+- **Watt increment**: 30W steps
+- **Cadence increment**: 5 RPM steps starting at 60 RPM
+- **Version**: 6 (current table format)
+
+Reference: `settings.h:288-307`
+
+```cpp
+#define POWERTABLE_WATT_SIZE 30        // 30 watt entries
+#define POWERTABLE_CAD_SIZE 10         // 10 cadence entries
+#define POWERTABLE_WATT_INCREMENT 30   // 30W increments
+#define MINIMUM_TABLE_CAD 60           // Start at 60 RPM
+#define POWERTABLE_CAD_INCREMENT 5     // 5 RPM increments
+```
+
+### Building the Power Table
+
+<Steps>
+  <Step title="Complete homing first">
+    Power table generation requires valid travel limits from homing.
+    
+    <Warning>
+    The power table will not be saved if homing was not performed.
+    </Warning>
+    
+    Reference: `src/Power_Table.cpp:281-282`
+  </Step>
+
+  <Step title="Perform test ride">
+    To populate the power table:
+    - Ride your bike at various resistance levels
+    - Vary cadence between 60-110 RPM
+    - Cover full resistance range (easy to hard)
+    - Maintain steady efforts at different power outputs
+    
+    The firmware collects 10 similar power samples before writing each table entry.
+  </Step>
+
+  <Step title="Monitor table population">
+    In the web interface or serial log:
+    - Watch for "Power Table Entry" messages
+    - Table fills in as you hit different power/cadence combinations
+    - More riding = more complete table
+    - Table saved automatically every 240 seconds if data added
+  </Step>
+
+  <Step title="Verify table coverage">
+    - Check for gaps in the power table
+    - Ride in uncovered areas (specific power/cadence combos)
+    - Complete table provides best ERG mode performance
+    - Partial tables work but may have interpolation errors
+  </Step>
+</Steps>
+
+### Power Table Parameters
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| POWER_SAMPLES | 10 | Samples required before writing entry |
+| MAX_NEIGHBOR_WEIGHT | 20 | Maximum neighbor downvotes |
+| MIN_NEIGHBOR_WEIGHT | 0 | Minimum neighbor downvotes |
+| POWER_TABLE_SAVE_INTERVAL | 240000ms | Auto-save interval (4 minutes) |
+| NORMAL_CAD | 90 | Normal cadence reference |
+| MINIMUM_RELIABLE_POSITIONS | 3 | Min positions before loading saved table |
+
+Reference: `settings.h:310-326`
+
+### Power Table Loading
+
+On startup, SmartSpin2k attempts to load a saved power table:
+
+1. Check if saved table exists in flash (`/PowerTable.txt`)
+2. Verify table version matches current version (v6)
+3. Check if both tables were created with homing
+4. If homing states match, load table directly
+5. If homing states differ, calculate offset and adjust positions
+
+Reference: `src/Power_Table.cpp:251-282`
+
+### Resetting the Power Table
+
+To start fresh:
+
+- In web interface: "Reset Power Table" button
+- Or trigger `resetPowerTableFlag` via BLE custom characteristic
+- Table cleared and file deleted from flash
+- New table built during subsequent rides
+
+## Stepper Configuration
+
+Fine-tune stepper motor behavior for optimal performance.
+
+### Shift Step Calibration
+
+The shift step defines how far the stepper moves for each manual shift button press.
+
+**Default**: 1200 steps (`settings.h:62`)
+
+<Steps>
+  <Step title="Test default shift step">
+    - Press shift button once
+    - Note resistance change on bike
+    - Ideally, each shift should change power by ~30W
+  </Step>
+
+  <Step title="Adjust if needed">
+    If resistance change is too small:
+    - Increase shift step (try 1500-1800)
+    
+    If resistance change is too large:
+    - Decrease shift step (try 800-1000)
+    
+    Target: Each shift = approximately 30W power change at 90 RPM cadence
+  </Step>
+
+  <Step title="Save configuration">
+    - Update shift step in web interface
+    - Save settings
+    - Test with manual shifts to verify
+  </Step>
+</Steps>
+
+### Stepper Speed
+
+**Default**: 3500 steps/s (`settings.h:68`)
+
+Adjust if:
+- Motor skips steps (reduce speed)
+- Resistance changes too slowly (increase speed)
+- Excessive noise or vibration (reduce speed)
+
+**Range**: 1500-5000 steps/s typical
+
+### Stepper Power (Current)
+
+**Default**: 900mA RMS (`settings.h:59`)
+
+<Warning>
+Do not exceed 2000mA. The TMC2225 driver is hardware-limited to 2000mA peak current.
+</Warning>
+
+Adjust if:
+- Motor lacks torque (increase current)
+- Driver overheating (decrease current)
+- Motor running too hot (decrease current)
+- Increased noise (decrease current)
+
+**Safe range**: 600-1200mA for most applications
+
+### StealthChop Mode
+
+**Default**: Enabled (`settings.h:257`)
+
+- **Enabled**: Quieter operation, slightly less torque
+- **Disabled**: More torque, noisier operation
+
+Toggle in web interface settings.
+
+## ERG Mode Calibration
+
+ERG mode automatically adjusts resistance to maintain target power.
+
+### ERG Sensitivity
+
+**Default**: 3.0 (`settings.h:80`)
+
+Defines how aggressively ERG mode responds to power differences:
+
+- Formula: `steps = (target_watts - actual_watts) / WATTS_PER_SHIFT * ERG_sensitivity * shift_step`
+- Higher values = more aggressive corrections
+- Lower values = smoother but slower adjustments
+
+**Tuning**:
+- If ERG overshoots target (oscillates): Decrease sensitivity to 2.0-2.5
+- If ERG too slow to reach target: Increase sensitivity to 3.5-4.0
+
+### ERG Mode Features
+
+**Power Table Integration**: Enabled by default (`settings.h:280`)
+- Uses power table for position lookups
+- More accurate than PID-only control
+- Requires populated power table
+
+**PID Controller**: Enabled by default (`settings.h:283`)
+- Used within ±20W window of target (`ERG_MODE_PID_WINDOW` in `settings.h:286`)
+- Handles fine adjustments and edge cases
+- Fallback when power table returns invalid values
+
+**Minimum Cadence**: 30 RPM (`settings.h:96`)
+- ERG mode stops below this cadence
+- Prevents motor movement when not pedaling
+
+## Calibration Verification
+
+<Steps>
+  <Step title="Test homing results">
+    - Min position set to 0
+    - Max position > 0 and reasonable for your bike (typically 50,000-200,000 steps)
+    - Saved to configuration (`hMin` and `hMax` in userConfig)
+    - Web interface shows "Homed: Yes"
+  </Step>
+
+  <Step title="Test full range movement">
+    - Command minimum resistance via web interface
+    - Verify knob moves to softest position
+    - Command maximum resistance
+    - Verify knob moves to hardest position
+    - Check for smooth motion throughout range
+  </Step>
+
+  <Step title="Test power table accuracy">
+    - Pedal at constant 90 RPM
+    - Adjust resistance and note actual vs. expected power
+    - Populated table entries should show accurate mapping
+    - Gaps in table may show interpolation
+  </Step>
+
+  <Step title="Test ERG mode">
+    - Enable ERG mode
+    - Set target power (e.g., 150W)
+    - Pedal at constant cadence
+    - Resistance should automatically adjust to maintain 150W
+    - Power should stabilize within ±5W of target
+  </Step>
+</Steps>
+
+## Troubleshooting Calibration
+
+### Homing times out
+
+**Possible causes**:
+- Sensitivity too high (motor doesn't detect stall)
+- Mechanical issue preventing motor from reaching stop
+- Driver communication failure
+
+**Solutions**:
+- Decrease homing sensitivity (try 40 or 30)
+- Verify knob moves freely by hand
+- Check stepper driver wiring and UART communication
+- Increase stepper power temporarily for homing
+
+### Homing detects stall prematurely
+
+**Possible causes**:
+- Sensitivity too low
+- High friction in mechanical system
+- Insufficient stepper power
+
+**Solutions**:
+- Increase homing sensitivity (try 60 or 70)
+- Lubricate gears and knob mechanism
+- Increase stepper power setting
+- Check for binding in case or gearbox
+
+### Inconsistent homing results
+
+**Possible causes**:
+- Loose mounting (mount, arm, or knob cup)
+- Gear backlash
+- Electrical noise affecting SG_RESULT readings
+
+**Solutions**:
+- Tighten all mounting hardware
+- Verify gears mesh properly with minimal play
+- Add shielding to stepper motor wiring
+- Check power supply quality (ripple, noise)
+
+### Power table not saving
+
+**Error**: "Power Table not saved because homing was not performed."
+
+Reference: `src/Power_Table.cpp:281-282`
+
+**Solution**:
+- Complete homing procedure first
+- Verify `rtConfig->getHomed()` returns true
+- Check flash storage space available
+- Re-run homing if necessary
+
+### ERG mode oscillates
+
+**Symptoms**: Power bounces above and below target, resistance changes constantly.
+
+**Solutions**:
+- Reduce ERG sensitivity (try 2.0-2.5)
+- Increase PID window for smoother transitions
+- Populate more power table entries
+- Verify shift step is properly calibrated (~30W per shift)
+
+### ERG mode too slow
+
+**Symptoms**: Takes long time to reach target power, undershoots target.
+
+**Solutions**:
+- Increase ERG sensitivity (try 3.5-4.0)
+- Increase stepper speed for faster adjustments
+- Verify power table has good coverage
+- Check that shift step is appropriate
+
+## Maintenance Calibration
+
+Recalibrate in these situations:
+
+- **After hardware changes**: New stepper, different gearing, case modifications
+- **After mounting changes**: Different bike, arm length change, knob cup replacement
+- **Performance degradation**: ERG mode less accurate, power readings drift
+- **Major firmware updates**: May include calibration algorithm improvements
+
+**Recommended**: Re-home every 3-6 months or after 100+ hours of use to account for mechanical wear.
+
+## Next Steps
+
+After successful calibration:
+
+1. Test all operational modes (manual, SIM, ERG)
+2. Perform initial training rides to populate power table
+3. Fine-tune settings based on your preferences
+4. Connect to cycling apps (Zwift, TrainerRoad, etc.)
+
+## Configuration Files
+
+Calibration data is stored in:
+
+- **User config**: `/config.txt` in LittleFS
+- **Power table**: `/PowerTable.txt` in LittleFS
+- **Build version**: `/build_version.txt` for OTA tracking
+
+Reference: `settings.h:36-42`
+
+## Advanced: Manual Calibration
+
+For Revision 1 boards without sensorless homing:
+
+1. Manually turn knob to minimum resistance
+2. In web interface, set current position to 0
+3. Manually turn knob to maximum resistance
+4. Note current position value
+5. Set max step to noted value
+6. Save configuration
+
+This provides basic travel limits but without the accuracy of sensorless homing.

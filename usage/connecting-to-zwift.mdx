@@ -1,0 +1,298 @@
+---
+title: 'Connecting to Zwift and Training Apps'
+description: 'Connect SmartSpin2k to Zwift, TrainerRoad, and other indoor cycling applications'
+icon: 'bluetooth'
+---
+
+## Overview
+
+SmartSpin2k broadcasts as a Bluetooth Low Energy (BLE) smart trainer, making it compatible with popular training applications like Zwift, TrainerRoad, RGT Cycling, and more. The device advertises multiple standard BLE services that training apps recognize.
+
+## BLE Services Broadcast
+
+SmartSpin2k broadcasts the following standard Bluetooth services:
+
+### Fitness Machine Service (FTMS)
+- **Service UUID**: `0x1826`
+- **Primary use**: ERG mode, simulation mode, and resistance control
+- **Characteristics**:
+  - Indoor Bike Data (`0x2AD2`) - Speed, cadence, power, resistance, heart rate
+  - Fitness Machine Control Point (`0x2AD9`) - Receive commands from apps
+  - Fitness Machine Status (`0x2ADA`) - Training status updates
+  - Fitness Machine Feature (`0x2ACC`) - Advertised capabilities
+
+### Cycling Power Service (CPS)
+- **Service UUID**: `0x1818`
+- **Primary use**: Power meter data transmission
+- **Characteristics**:
+  - Cycling Power Measurement (`0x2A63`) - Instantaneous power and crank data
+  - Cycling Power Feature (`0x2A65`) - Power meter capabilities
+  - Sensor Location (`0x2A5D`) - Reports left crank position
+
+### Cycling Speed and Cadence Service (CSC)
+- **Service UUID**: `0x1816`
+- **Characteristics**:
+  - CSC Measurement (`0x2A5B`) - Wheel and crank revolution data
+  - CSC Feature (`0x2A5C`) - Speed and cadence capabilities
+
+### Heart Rate Service
+- **Service UUID**: `0x180D`
+- **Characteristic**: Heart Rate Measurement (`0x2A37`)
+- **Note**: Only broadcast when a heart rate monitor is connected to SmartSpin2k
+
+## Connecting to Zwift
+
+<Steps>
+  <Step title="Power on SmartSpin2k">
+    Ensure your SmartSpin2k is powered on and connected to WiFi. The device will automatically start broadcasting BLE services.
+  </Step>
+  
+  <Step title="Open Zwift">
+    Launch Zwift on your device (PC, Mac, iOS, or Android).
+  </Step>
+  
+  <Step title="Navigate to pairing screen">
+    On the ride setup screen, click on "Search" or the pairing icon to open the device pairing menu.
+  </Step>
+  
+  <Step title="Pair as controllable trainer">
+    Under "Controllable Trainer", find your SmartSpin2k device (default name: "SmartSpin2k").
+    
+    Select it to pair. Zwift will use the **Fitness Machine Service** for control.
+  </Step>
+  
+  <Step title="Pair power source (optional)">
+    If you have a power meter connected to SmartSpin2k, you can also pair it under "Power Source".
+    
+    Select your SmartSpin2k again to use the **Cycling Power Service**.
+    
+    <Note>
+      If you don't have a separate power meter, SmartSpin2k can simulate power based on your power table calibration.
+    </Note>
+  </Step>
+  
+  <Step title="Pair cadence sensor (optional)">
+    Select your SmartSpin2k under "Cadence" to use the **Cycling Speed and Cadence Service**.
+  </Step>
+  
+  <Step title="Pair heart rate monitor (optional)">
+    If you have a heart rate monitor connected via Bluetooth to SmartSpin2k, it will appear as a heart rate source.
+    
+    Alternatively, pair your heart rate monitor directly to Zwift.
+  </Step>
+  
+  <Step title="Start riding">
+    Once paired, click "Let's Go" to start your ride. SmartSpin2k will respond to Zwift's resistance changes automatically.
+  </Step>
+</Steps>
+
+## Connecting to Other Apps
+
+<Tabs>
+  <Tab title="TrainerRoad">
+    ### TrainerRoad Connection
+    
+    <Steps>
+      <Step title="Open TrainerRoad">
+        Launch the TrainerRoad app on your device.
+      </Step>
+      
+      <Step title="Go to Devices">
+        Tap the menu icon and select "Devices" or "Sensors".
+      </Step>
+      
+      <Step title="Add Smart Trainer">
+        Tap "Add Smart Trainer" and select your SmartSpin2k from the list.
+        
+        TrainerRoad will automatically use FTMS for ERG mode control.
+      </Step>
+      
+      <Step title="Add sensors">
+        Add Heart Rate, Cadence, and Power sensors as needed. All can be provided by SmartSpin2k if you have the appropriate sensors connected.
+      </Step>
+      
+      <Step title="Start workout">
+        Begin your workout. TrainerRoad will send target power commands in ERG mode automatically.
+      </Step>
+    </Steps>
+    
+    <Note>
+      TrainerRoad sends a 50W target power command when connected. This is normal and won't affect your workout.
+    </Note>
+  </Tab>
+  
+  <Tab title="RGT Cycling">
+    ### RGT Cycling Connection
+    
+    <Steps>
+      <Step title="Launch RGT">
+        Open RGT Cycling on your computer.
+      </Step>
+      
+      <Step title="Open device settings">
+        Click the settings icon and navigate to "Devices" or "Sensors".
+      </Step>
+      
+      <Step title="Scan for devices">
+        Click "Scan" to search for Bluetooth devices.
+      </Step>
+      
+      <Step title="Pair trainer">
+        Select SmartSpin2k under "Smart Trainer" or "FE-C Trainer".
+      </Step>
+      
+      <Step title="Configure sensors">
+        Add power, cadence, and heart rate sensors as desired.
+      </Step>
+      
+      <Step title="Save and ride">
+        Save your device configuration and start riding.
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Sufferfest / Wahoo">
+    ### Wahoo SYSTM (formerly Sufferfest)
+    
+    <Steps>
+      <Step title="Open Wahoo SYSTM">
+        Launch the Wahoo SYSTM app.
+      </Step>
+      
+      <Step title="Access sensors">
+        Tap the menu and select "Sensors".
+      </Step>
+      
+      <Step title="Add trainer">
+        Under "Smart Trainer", tap "Add Sensor" and select SmartSpin2k.
+      </Step>
+      
+      <Step title="Add additional sensors">
+        Add heart rate monitor, power meter, and cadence sensor if available.
+      </Step>
+      
+      <Step title="Test connection">
+        Pedal briefly to ensure the app receives data from SmartSpin2k.
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Peloton">
+    ### Peloton Digital Connection
+    
+    <Warning>
+      The Peloton Digital app has limited support for third-party trainers. SmartSpin2k can provide power and cadence data, but automatic resistance control may not work.
+    </Warning>
+    
+    <Steps>
+      <Step title="Open Peloton">
+        Launch the Peloton Digital app on your device.
+      </Step>
+      
+      <Step title="Navigate to settings">
+        Tap your profile and select "Settings" > "Bluetooth".
+      </Step>
+      
+      <Step title="Pair devices">
+        Enable Bluetooth and pair SmartSpin2k as a power meter or cadence sensor.
+      </Step>
+      
+      <Step title="Manual resistance control">
+        During classes, you'll need to manually adjust resistance based on instructor callouts. SmartSpin2k won't automatically respond to Peloton's resistance cues.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Troubleshooting Connection Issues
+
+### SmartSpin2k not appearing in app
+
+<AccordionGroup>
+  <Accordion title="Check Bluetooth is enabled">
+    Ensure Bluetooth is turned on for your device and the training app has permission to access Bluetooth.
+  </Accordion>
+  
+  <Accordion title="Verify SmartSpin2k is broadcasting">
+    Open the SmartSpin2k web interface at `http://smartspin2k.local` and check the status page to confirm BLE services are active.
+  </Accordion>
+  
+  <Accordion title="Check device name">
+    If you've changed the device name in settings, search for your custom name instead of "SmartSpin2k".
+    
+    You can check/change this at: Web Interface > Settings > Device Name
+  </Accordion>
+  
+  <Accordion title="Reduce Bluetooth interference">
+    Move other Bluetooth devices away from your training area. Multiple devices can cause interference.
+  </Accordion>
+  
+  <Accordion title="Restart Bluetooth services">
+    Reboot SmartSpin2k from the web interface: Settings > Reboot Device
+  </Accordion>
+</AccordionGroup>
+
+### Connection drops during workout
+
+- **Check distance**: Ensure your device running the training app is within 10 meters (33 feet) of SmartSpin2k
+- **WiFi interference**: Move your WiFi router away from Bluetooth devices or switch to a 5GHz network
+- **Power cycle**: Restart both SmartSpin2k and your training app
+- **Firmware update**: Check for SmartSpin2k firmware updates in Settings
+
+### ERG mode not working
+
+- **Verify power meter**: ERG mode requires either a connected power meter or power simulation enabled
+- **Check FTMS pairing**: Ensure the app paired SmartSpin2k as a "Controllable Trainer" or "Smart Trainer"
+- **Minimum cadence**: Start pedaling at least 40 RPM for ERG mode to engage
+- **Power table calibration**: If using simulated power, ensure your power table is calibrated. See [Power Calibration](/usage/power-calibration)
+
+## Multiple Device Connections
+
+SmartSpin2k can maintain connections with:
+- **One training app** (Zwift, TrainerRoad, etc.) via FTMS/CPS/CSC
+- **One external power meter** (as a BLE client)
+- **One heart rate monitor** (as a BLE client)
+- **One remote control device** (as a BLE client)
+- **Multiple web interface sessions** (via WiFi)
+
+<Note>
+  SmartSpin2k acts as both a BLE server (broadcasting to apps) and a BLE client (connecting to sensors). This allows you to connect external sensors to SmartSpin2k, which then relays the data to your training app.
+</Note>
+
+## Advanced: BLE Service Technical Details
+
+For developers or advanced users interested in the technical implementation:
+
+```cpp
+// From BLE_Fitness_Machine_Service.cpp
+// FTMS Indoor Bike Data includes:
+// - Speed (0.01 km/h resolution)
+// - Cadence (0.5 RPM resolution)
+// - Instantaneous Power (1 watt resolution)
+// - Resistance Level (0-100)
+// - Heart Rate (when HR monitor connected)
+
+// Supported FTMS Control Point Commands:
+// - RequestControl (0x00)
+// - Reset (0x01)
+// - SetTargetPower (0x05) - ERG mode
+// - SetIndoorBikeSimulationParameters (0x11) - Sim mode
+// - SetTargetResistanceLevel (0x04)
+// - SetTargetInclination (0x06)
+// - SpinDownControl (0x13)
+// - StartOrResume (0x07)
+// - StopOrPause (0x08)
+```
+
+For custom integrations, refer to the [Custom Characteristic documentation](https://github.com/doudar/SmartSpin2k/blob/develop/CustomCharacteristic.md) in the SmartSpin2k GitHub repository.
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="ERG Mode" icon="gauge" href="/usage/erg-mode">
+    Learn how to use ERG mode for power-based training
+  </Card>
+  <Card title="Power Calibration" icon="sliders" href="/usage/power-calibration">
+    Calibrate your bike's power output for accurate data
+  </Card>
+</CardGroup>

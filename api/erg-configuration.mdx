@@ -1,0 +1,459 @@
+---
+title: ERG Mode Configuration
+description: Configuration and tuning parameters for ERG mode operation
+---
+
+## Overview
+
+ERG (Ergometer) mode automatically adjusts resistance to maintain a target power output, regardless of cadence changes. SmartSpin2k uses a hybrid approach combining:
+
+- **Power Table Lookups** - Fast jumps to approximate target position
+- **PID Control** - Fine adjustments to maintain exact target power
+- **Adaptive Delays** - Waits for power readings to stabilize
+
+## Core ERG Settings
+
+<ParamField path="ERG_SENSITIVITY" type="float" default="3.0">
+  Base sensitivity/gain for ERG mode adjustments. Predicated on number of shifts per 30 watts of resistance change.
+  
+  **How it works:**
+  - If the difference between ERG target and current watts is 30W
+  - And shift step is 600 steps
+  - And ERG_Sensitivity is 1.0, the motor moves 600 steps
+  - With ERG_Sensitivity of 2.0, the motor moves 1200 steps
+  
+  **Note:** Values much different than 1.0-4.0 suggest shift step needs recalibration.
+</ParamField>
+
+<ParamField path="WATTS_PER_SHIFT" type="integer" default="30">
+  Expected power change per shift used in ERG calculations. Users should target this value by adjusting shift step during calibration.
+</ParamField>
+
+<ParamField path="ERG_PER_SHIFT" type="integer" default="10">
+  Amount to change watt target per shift press when in ERG mode.
+</ParamField>
+
+<ParamField path="MIN_ERG_CADENCE" type="integer" default="30">
+  Minimum cadence (RPM) at which ERG mode operates. Below this cadence, ERG mode stops and returns to simulation mode.
+</ParamField>
+
+<ParamField path="ERG_MODE_DELAY" type="integer" default="700">
+  Base loop delay for ERG mode in milliseconds. Controls how often ERG calculations are performed.
+</ParamField>
+
+## Power Table Integration
+
+<ParamField path="ERG_MODE_USE_POWER_TABLE" type="define">
+  Enable use of power table for ERG mode setpoint changes.
+  
+  **Uncomment to enable:** `#define ERG_MODE_USE_POWER_TABLE`
+  
+  **Benefits:**
+  - Fast jumps to target power when setpoint changes significantly
+  - Learns your bike's resistance curve over time
+  - More accurate than pure PID for large changes
+</ParamField>
+
+<ParamField path="ERG_MODE_PID_WINDOW" type="integer" default="20">
+  Window (in watts) around target where ERG mode uses PID instead of power table for initial changes.
+  
+  **Example:** With target of 200W:
+  - Table lookup targets 180W (200 - 20) when increasing
+  - Table lookup targets 220W (200 + 20) when decreasing
+  - This prevents overshooting the target
+</ParamField>
+
+## PID Control
+
+<ParamField path="ERG_MODE_USE_PID" type="define">
+  Enable PID controller for ERG mode fine adjustments.
+  
+  **Uncomment to enable:** `#define ERG_MODE_USE_PID`
+  
+  **When PID is used:**
+  - Small setpoint changes (< POWERTABLE_WATT_INCREMENT)
+  - After power table lookup completes
+  - When power table lookup fails
+  - For maintaining steady state
+</ParamField>
+
+### PID Implementation
+
+SmartSpin2k uses a simplified proportional-only PID controller with dynamic gain scaling:
+
+```cpp
+// Proportional gain based on user sensitivity
+double Kp = userConfig->getERGSensitivity();
+
+// Calculate error
+int error = targetWatts - currentWatts;
+
+// Dynamic gain adjustment based on error magnitude
+if (abs(error) < 10) {
+  Kp = Kp * 0.25;  // Gentle for tiny errors
+} else if (abs(error) < 50) {
+  Kp = Kp * 0.75;  // Moderate for medium errors
+} else if (abs(error) > 100) {
+  Kp = Kp * 1.25;  // Aggressive for large errors
+}
+
+// Calculate output
+double proportional = Kp * error;
+double PID_output = proportional;
+
+// Cap change based on stepper speed
+int maxChange = (stepperSpeed * ERG_MODE_DELAY) / 1000;
+if (PID_output > maxChange) PID_output = maxChange;
+if (PID_output < -maxChange) PID_output = -maxChange;
+
+// Apply
+float newPosition = currentPosition + PID_output;
+```
+
+## Operating Modes
+
+ERG mode operates in three states:
+
+### MAINTAIN Mode
+
+<ParamField path="Mode::MAINTAIN" type="integer" default="0">
+  Normal operating state. Uses PID control to make small adjustments to maintain target power.
+  
+  **Active when:**
+  - Target power unchanged
+  - Target power reached after setpoint change
+  - Small adjustments needed (< 30W)
+</ParamField>
+
+### INCREASING Mode
+
+<ParamField path="Mode::INCREASING" type="integer" default="2">
+  Increasing resistance to reach higher target power.
+  
+  **Active when:**
+  - New target power > current power + POWERTABLE_WATT_INCREMENT
+  - Using power table to jump to approximate position
+  
+  **Returns to MAINTAIN when:**
+  - Current power ≥ target power
+  - Current power stops increasing
+</ParamField>
+
+### DECREASING Mode
+
+<ParamField path="Mode::DECREASING" type="integer" default="1">
+  Decreasing resistance to reach lower target power.
+  
+  **Active when:**
+  - New target power < current power - POWERTABLE_WATT_INCREMENT
+  - Using power table to jump to approximate position
+  
+  **Returns to MAINTAIN when:**
+  - Current power ≤ target power
+  - Current power stops decreasing
+</ParamField>
+
+## Timing and Delays
+
+ERG mode uses adaptive delays to ensure power readings stabilize:
+
+```cpp
+// Base delay after each adjustment
+ergTimer = millis() + ERG_MODE_DELAY;
+
+// Additional delay when using power table
+if (tableResult != RETURN_ERROR) {
+  // Calculate based on distance and stepper speed
+  long stepDistance = abs(currentPosition - tableResult);
+  long timeToAdd = (stepDistance * 1000 / stepperSpeed) * 2;
+  
+  // Cap at 10 seconds maximum
+  if (timeToAdd > 10000) timeToAdd = 10000;
+  
+  ergTimer += timeToAdd + ERG_MODE_DELAY;
+}
+```
+
+## Optional Features
+
+<ParamField path="ERG_GUARDRAILS" type="define">
+  **Commented out by default:** `// #define ERG_GUARDRAILS`
+  
+  Uncomment to enable guardrails for ERG mode in the stepper loop. Provides additional safety limits.
+</ParamField>
+
+<ParamField path="INTERNAL_ERG_4EXT_FTMS" type="define">
+  **Commented out by default:** `// #define INTERNAL_ERG_4EXT_FTMS`
+  
+  Uncomment to use internal ERG control on external FTMS trainers.
+</ParamField>
+
+## ErgMode Class API
+
+### Public Methods
+
+<ParamField path="runERG()" type="void">
+  Main ERG mode control loop. Should be called regularly from main task.
+  
+  **Responsibilities:**
+  - Manages power table population
+  - Calls computeErg() when in ERG mode
+  - Handles power table save/load
+  - Manages pTab4Pwr mode
+  - Sets stepper min/max limits
+</ParamField>
+
+<ParamField path="computeErg()" type="void">
+  Calculate and apply ERG mode adjustments.
+  
+  **Process:**
+  1. Check if user is spinning (cadence > MIN_ERG_CADENCE)
+  2. Enforce minimum watt setpoint
+  3. Detect new watt value or setpoint change
+  4. Use power table for large setpoint changes
+  5. Use PID for maintaining or small adjustments
+  6. Update stepper target position
+</ParamField>
+
+### Private Methods
+
+<ParamField path="_setPointChangeState()" type="int32_t">
+  Handle large setpoint changes using power table lookup.
+  
+  **Returns:** Target stepper position, or RETURN_ERROR if lookup failed
+  
+  **Behavior:**
+  - Determines INCREASING or DECREASING mode
+  - Adjusts lookup target by ERG_MODE_PID_WINDOW
+  - Validates table result against current position
+  - Calculates adaptive delay for motor movement
+  - Falls back to PID if lookup fails
+</ParamField>
+
+<ParamField path="_inSetpointState()" type="int32_t">
+  Handle steady state and small adjustments using PID control.
+  
+  **Returns:** New stepper target position
+  
+  **Features:**
+  - Dynamic gain scaling based on error magnitude
+  - Increased gain at very low watts (prevents Zwift timeout)
+  - Movement capped to stepper speed × ERG_MODE_DELAY
+</ParamField>
+
+<ParamField path="_userIsSpinning()" type="bool">
+  Check if user is pedaling fast enough for ERG mode.
+  
+  **Parameters:**
+  - `int cadence` - Current cadence in RPM
+  - `float incline` - Current incline/position
+  
+  **Returns:** true if cadence > MIN_ERG_CADENCE
+  
+  **Side effect:** Resets to simulation mode if cadence too low
+</ParamField>
+
+<ParamField path="_updateValues()" type="void">
+  Apply new target position and update tracking values.
+  
+  **Parameters:**
+  - `float newIncline` - New target stepper position
+  
+  **Actions:**
+  - Sets target incline in runtime config
+  - Writes CSV log entry
+  - Updates previous watts and cadence tracking
+</ParamField>
+
+<ParamField path="_writeLog()" type="void">
+  Write ERG mode data to CSV log.
+  
+  **Parameters:**
+  - `float currentIncline` - Current position
+  - `float newIncline` - Target position
+  - `int currentSetPoint` - Previous target watts
+  - `int newSetPoint` - New target watts
+  - `int currentWatts` - Previous actual watts
+  - `int newWatts` - Current actual watts
+  - `int currentCadence` - Previous cadence
+  - `int newCadence` - Current cadence
+</ParamField>
+
+## Tuning Guide
+
+### Optimize ERG Sensitivity
+
+1. **Start with default:** `ERGSensitivity = 3.0`
+2. **Test in Zwift workout:**
+   - Watch for overshooting (reduce sensitivity)
+   - Watch for slow response (increase sensitivity)
+3. **Adjust in increments of 0.5**
+4. **Typical range:** 2.0 - 5.0
+
+### Calibrate Shift Step
+
+Proper shift step calibration is critical for ERG mode:
+
+1. **Manual testing:**
+   - Note current watts at a resistance level
+   - Press shift up button
+   - Note new watts
+   - Target: ~30W change per shift
+
+2. **Adjust shift step:**
+   - If change > 30W: decrease shift step
+   - If change < 30W: increase shift step
+   - Typical: 1000-1500 steps
+
+3. **Verify:**
+   - Test at multiple power levels (100W, 200W, 300W)
+   - Should be consistent across range
+
+### Build Power Table
+
+For best ERG mode performance:
+
+1. **Perform homing** (hold both shifters)
+2. **Ride normally** for 30-60 minutes
+3. **Vary cadence** (60-100 RPM)
+4. **Vary power** (low, medium, high)
+5. **Check coverage:** Enable `DEBUG_POWERTABLE` to view table
+
+### Adjust PID Window
+
+If ERG mode overshoots target power:
+
+- **Increase ERG_MODE_PID_WINDOW** (e.g., 30 or 40)
+- More conservative table lookups
+- Slower initial response, more accurate settling
+
+If ERG mode is too slow to react:
+
+- **Decrease ERG_MODE_PID_WINDOW** (e.g., 10 or 15)
+- More aggressive table lookups
+- Faster response, may overshoot
+
+## Usage Examples
+
+### Basic ERG Mode Operation
+
+```cpp
+// ERG mode automatically activates when app sends target power
+// No configuration needed - just connect to Zwift/TrainerRoad
+
+void loop() {
+  ergMode->runERG();
+}
+```
+
+### Custom Sensitivity
+
+```cpp
+// Increase sensitivity for quicker response
+userConfig->setERGSensitivity(4.5);
+userConfig->saveToLittleFS();
+```
+
+### Disable Power Table
+
+```cpp
+// In settings.h, comment out:
+// #define ERG_MODE_USE_POWER_TABLE
+
+// ERG mode will use only PID control
+```
+
+### Monitor ERG Operation
+
+```cpp
+// Enable detailed logging in settings.h:
+#define DEBUG_POWERTABLE  // See table population
+
+// CSV log format: currentIncline;newIncline;currentSetPoint;newSetPoint;currentWatts;newWatts;currentCadence;newCadence
+```
+
+### Force PID-Only Mode
+
+For troubleshooting or very unique bikes:
+
+```cpp
+// In settings.h:
+// #define ERG_MODE_USE_POWER_TABLE  // Comment this out
+#define ERG_MODE_USE_PID             // Keep this
+
+// Adjust sensitivity higher for PID-only:
+userConfig->setERGSensitivity(5.0);
+```
+
+## Troubleshooting
+
+### ERG Mode Not Activating
+
+**Check:**
+- Power meter connected and reporting watts
+- App (Zwift/TrainerRoad) sending target power
+- Cadence > MIN_ERG_CADENCE (30 RPM)
+- `rtConfig->getFTMSMode() == SetTargetPower`
+
+### Overshooting Target Power
+
+**Solutions:**
+- Reduce ERG_SENSITIVITY (try 2.5 or 2.0)
+- Increase ERG_MODE_PID_WINDOW (try 30 or 40)
+- Verify shift step is calibrated to ~30W/shift
+- Check power table has good coverage
+
+### Slow Response
+
+**Solutions:**
+- Increase ERG_SENSITIVITY (try 4.0 or 4.5)
+- Decrease ERG_MODE_PID_WINDOW (try 10 or 15)
+- Ensure power table is loaded and populated
+- Verify stepper speed is adequate (3500+ steps/s)
+
+### Oscillating Around Target
+
+**Solutions:**
+- Reduce ERG_SENSITIVITY slightly
+- Increase ERG_MODE_DELAY (try 1000ms)
+- Check for mechanical issues (binding, friction)
+- Ensure consistent power meter readings
+
+### Power Table Lookups Failing
+
+**Check:**
+- Homing has been performed
+- Power table has data in target power range
+- Cadence is within table range (60-105 RPM)
+- Enable DEBUG_POWERTABLE to view table contents
+
+### ERG Stops at Low Cadence
+
+**Expected behavior:** ERG mode requires cadence > MIN_ERG_CADENCE (30 RPM)
+
+**To change:** Modify MIN_ERG_CADENCE in settings.h (not recommended < 20)
+
+## Integration with Apps
+
+### Zwift
+
+- ERG mode activates in workout mode
+- Target power updates every few seconds
+- Works with all workout types
+- Resistance returns to sim mode after workout
+
+### TrainerRoad
+
+- ERG mode is primary control method
+- Very frequent target power updates
+- Benefits most from power table
+- Smooth power targets work best
+
+### Other Apps
+
+Any app that sends FTMS Set Target Power commands will activate ERG mode.
+
+## See Also
+
+- [Configuration Settings](/api/settings) - Overall system settings
+- [Power Table Configuration](/api/power-table) - Power table details

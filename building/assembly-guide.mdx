@@ -1,0 +1,222 @@
+---
+title: Assembly Guide
+description: Step-by-step instructions for assembling your SmartSpin2k hardware
+---
+
+This guide provides comprehensive assembly instructions for SmartSpin2k. The assembly process varies depending on your hardware version (V2 Through-Hole or V3 Integrated PCB).
+
+## Before You Begin
+
+<Warning>
+Ensure you have all required components before starting assembly. Missing parts will interrupt the build process.
+</Warning>
+
+### Required Tools
+
+- Soldering iron (for V2)
+- Multimeter for testing connections
+- Heat gun or soldering iron for heat-set inserts
+- Phillips screwdriver
+- Hex key set (M3, M5)
+- Wire strippers
+- 3D printer for printed components
+
+### Hardware Version Selection
+
+SmartSpin2k is available in two primary hardware versions:
+
+- **V2 - Through-Hole**: DIY-friendly design with hand-solderable components and readily available parts
+- **V3 - Integrated PCB**: Manufactured PCB with SMT components, includes serial interface for Peloton bikes
+
+## V2 Through-Hole Assembly
+
+### PCB Assembly
+
+<Steps>
+  <Step title="Prepare the PCB">
+    Order the PCB using the gerber files from the Hardware/V2 directory. Use the optional soldering jig to align through-hole components for easier soldering.
+    
+    <img src="/Pictures/solder_jig_assembly.jpg" alt="Soldering jig for component alignment" />
+  </Step>
+
+  <Step title="Install heat-set inserts">
+    Install M3 x 5 x 4 heat-set inserts (5mm diameter) into the case halves:
+    - Heat your soldering iron to approximately 200-220°C
+    - Place insert on the designated hole
+    - Apply gentle pressure until insert is flush with surface
+    - Allow to cool completely before handling
+    
+    You'll need these inserts to replace wood screws with M3 screws for better durability.
+  </Step>
+
+  <Step title="Solder PCB components">
+    Solder all through-hole components to the PCB according to the schematic. Take care to:
+    - Verify component orientation before soldering
+    - Use the soldering jig to keep components aligned
+    - Check for cold solder joints
+    - Test continuity with multimeter
+  </Step>
+
+  <Step title="Assemble internal gearbox">
+    Install the 11:40 tooth gear ratio:
+    - Print both the 11-tooth and 40-tooth gears from Hardware/Common Assets/Gears
+    - For metal shaft option, print the 40T HEX version and use a 5/16" bolt
+    - For plastic shaft, use the standard 40T gear with integrated shaft
+    - Ensure gears mesh properly with minimal backlash
+  </Step>
+
+  <Step title="Install knob cup and insert">
+    Select the appropriate knob insert for your bike from Hardware/Common Assets/Inserts:
+    - Choose the insert matching your bike's resistance knob
+    - Install the knob cup that retains the insert
+    - The knob cup connects to the internal gearbox
+    - Test fit on your bike's knob before final assembly
+  </Step>
+
+  <Step title="Assemble case halves">
+    Join the left and right case halves:
+    - Route wiring carefully to avoid pinching
+    - Use 4x M3 screws to secure the halves together
+    - Ensure all components fit properly before tightening
+    - Verify the stepper motor shaft aligns with the gear
+  </Step>
+</Steps>
+
+### Case Options
+
+#### Direct Mount (Recommended)
+
+The direct mount design provides superior stability, especially for bikes with spherical knobs.
+
+**Requirements:**
+- Minimum clearance specifications:
+  - Long case: 115mm minimum between knob center and head tube (suits Bowflex C6, Peloton, Echelon Connect Sport)
+  - Short case: 81mm minimum clearance (suits Bowflex C7)
+- Additional components from Common Assets:
+  - Arm (length depends on your bike - see mounting guide)
+  - Bike mount (specific to your bike's head tube)
+
+**Bill of Materials (Direct Mount):**
+- M3 x 5 x 4 heat-set inserts (5mm diameter)
+- 4x M3 screws (M3x8 or M3x10)
+- 1x M5x12mm screw for the arm
+- 2x M5x30mm screws (bike mount and case)
+- 3x M5 nuts
+- Optional: 1/2" wide velcro cable tie (8" length) for bike mount
+- Optional: 2mm non-slip adhesive backed rubber for bike mount protection
+
+#### Universal Mount
+
+Suitable for bikes without a direct mount solution or when portability is desired.
+
+**Requirements:**
+- Minimum 49mm clearance between knob center and rear of head tube
+- More portable but less rigid than direct mount
+
+#### Ultra Short Mod
+
+For bikes with less than 49mm head tube spacing, this shortened version of the V2 case allows installation in very compact spaces.
+
+## V3 Integrated PCB Assembly
+
+<Steps>
+  <Step title="PCB preparation">
+    The V3 PCB uses SMT components and should be manufactured by a PCB assembly service. Verify all components are properly soldered upon receipt.
+  </Step>
+
+  <Step title="Serial interface for Peloton">
+    The V3 board includes a UART-to-serial driver for direct communication with Peloton bikes:
+    - Locate the auxiliary serial connections (pins defined in settings.h:196-200)
+    - Verify TX/RX pin assignments match your configuration
+  </Step>
+
+  <Step title="Assemble gearbox and case">
+    Follow the same gearbox assembly process as V2:
+    - Install 11:40 tooth gears
+    - Add knob cup and bike-specific insert
+    - Ensure rigid mounting to bike frame
+  </Step>
+
+  <Step title="Final assembly">
+    Complete the V3 assembly with direct mount components:
+    - Install the arm (see Arm selection guide)
+    - Attach bike mount to head tube
+    - Connect case to arm with M5 hardware
+  </Step>
+</Steps>
+
+## Common Components Assembly
+
+These components are required for both V2 and V3 builds:
+
+### Gearbox Assembly
+
+- 11-tooth pinion gear on stepper shaft
+- 40-tooth driven gear connected to knob cup
+- 3.636:1 gear ratio (11:40)
+- Provides optimal torque and resolution for resistance control
+
+### Shifters (Optional)
+
+Print manual shifters from Hardware/Common Assets/Shifters in TPU for flexibility. These allow manual resistance adjustments during rides.
+
+## Printing Instructions
+
+For all 3D printed components:
+
+- **Perimeters**: 4
+- **Infill**: 40%
+- **Layer height**: 0.2mm
+- **Supports**: Enable from print bed only for case halves
+- **Material**: PLA or PETG for structural parts, TPU for shifters
+
+## Post-Assembly Testing
+
+<Warning>
+Do not connect to bike until all electrical tests pass. Incorrect wiring can damage components.
+</Warning>
+
+<Steps>
+  <Step title="Visual inspection">
+    Check all solder joints, verify no shorts between traces, ensure all connectors are properly seated.
+  </Step>
+
+  <Step title="Continuity testing">
+    Use a multimeter to verify:
+    - Power connections (3.3V, 5V, GND)
+    - Stepper motor connections
+    - Serial communication lines
+    - Button connections
+  </Step>
+
+  <Step title="Power-on test">
+    Connect power and verify:
+    - LED indicator lights (Pin 2)
+    - ESP32 boots successfully
+    - No smoke or unusual heat
+    - WiFi access point appears
+  </Step>
+
+  <Step title="Mechanical test">
+    Before mounting to bike:
+    - Test stepper motor rotation
+    - Verify gear engagement
+    - Check for binding or unusual resistance
+    - Test manual shifter buttons
+  </Step>
+</Steps>
+
+## Next Steps
+
+After successful assembly:
+
+1. Proceed to [Wiring](/building/wiring) for connection details
+2. Follow [Mounting](/building/mounting) to install on your bike
+3. Complete [Calibration](/building/calibration) for optimal performance
+
+## Resources
+
+- Build guide PDF: `SS2kR3BuildingInstructions.pdf` in source repository
+- Hardware files: `~/workspace/source/Hardware/`
+- Component specifications: `~/workspace/source/include/settings.h`
+- Community support: SmartSpin2k GitHub discussions

@@ -1,0 +1,272 @@
+---
+title: Cycling Power Service
+description: Broadcasting power measurements with crank and wheel revolution data
+---
+
+## Overview
+
+The Cycling Power Service (CPS) broadcasts instantaneous power measurements along with crank and wheel revolution data. This service is compatible with all major cycling apps and head units that support Bluetooth power meters.
+
+## Service UUID
+
+<ParamField path="Service UUID" type="UUID">
+  `0x1818` (Cycling Power Service)
+</ParamField>
+
+## Characteristics
+
+### Cycling Power Measurement
+
+<ParamField path="UUID" type="UUID">
+  `0x2A63`
+</ParamField>
+
+<ParamField path="Properties" type="flags">
+  READ | NOTIFY
+</ParamField>
+
+Broadcasts current power and revolution data.
+
+**Data Format:**
+
+```
+Byte 0-1: Flags (uint16, little-endian)
+  Bit 2: Wheel Revolution Data Present (1)
+  Bit 3: Crank Revolution Data Present (1)
+
+Byte 2-3: Instantaneous Power (sint16)
+  Unit: watts
+  Range: -32768 to 32767W
+  Example: 250W = 0xFA 0x00
+
+Byte 4-7: Cumulative Wheel Revolutions (uint32)
+  Total wheel rotations since device start
+  Example: 12,543 = 0xFF 0x30 0x00 0x00
+
+Byte 8-9: Last Wheel Event Time (uint16)
+  Unit: 1/2048 seconds
+  Rolls over at 32 seconds
+  Example: 1024 = 0.5 seconds = 0x00 0x04
+
+Byte 10-11: Cumulative Crank Revolutions (uint16)
+  Total crank rotations since device start
+  Example: 3,254 = 0xB6 0x0C
+
+Byte 12-13: Last Crank Event Time (uint16)
+  Unit: 1/1024 seconds
+  Rolls over at 64 seconds
+  Example: 512 = 0.5 seconds = 0x00 0x02
+```
+
+**Complete Example (250W, cadence data):**
+```
+0x0C 0x00              # Flags: wheel + crank data present
+0xFA 0x00              # 250W instantaneous power
+0xFF 0x30 0x00 0x00    # 12,543 wheel revolutions
+0x00 0x04              # 1024 ticks (0.5s) last wheel event
+0xB6 0x0C              # 3,254 crank revolutions
+0x00 0x02              # 512 ticks (0.5s) last crank event
+```
+
+### Cycling Power Feature
+
+<ParamField path="UUID" type="UUID">
+  `0x2A65`
+</ParamField>
+
+<ParamField path="Properties" type="flags">
+  READ
+</ParamField>
+
+Describes the capabilities of the power meter.
+
+**Value (4 bytes):**
+```
+Byte 0-3: Feature Flags (uint32, little-endian)
+  Bit 2: Wheel Revolution Data Supported (1)
+  Bit 3: Crank Revolution Data Supported (1)
+  
+  Value: [0x0C, 0x00, 0x00, 0x00]
+```
+
+**Supported Features:**
+- Wheel Revolution Data Supported
+- Crank Revolution Data Supported
+
+**Unsupported Features:**
+- Pedal Power Balance
+- Accumulated Torque
+- Extreme Magnitudes/Angles
+- Top/Bottom Dead Spot Angles
+- Accumulated Energy
+- Offset Compensation
+
+### Sensor Location
+
+<ParamField path="UUID" type="UUID">
+  `0x2A5D`
+</ParamField>
+
+<ParamField path="Properties" type="flags">
+  READ
+</ParamField>
+
+**Value:**
+```
+[0x05] = Left Crank
+```
+
+Possible sensor locations (per spec):
+- `0x00`: Other
+- `0x01`: Top of shoe
+- `0x02`: In shoe
+- `0x03`: Hip
+- `0x04`: Front Wheel
+- `0x05`: Left Crank
+- `0x06`: Right Crank
+- `0x07`: Left Pedal
+- `0x08`: Right Pedal
+- `0x09`: Front Hub
+- `0x0A`: Rear Dropout
+- `0x0B`: Chainstay
+- `0x0C`: Rear Wheel
+- `0x0D`: Rear Hub
+- `0x0E`: Chest
+- `0x0F`: Spider
+- `0x10`: Chain Ring
+
+## Data Sources
+
+SmartSpin2k populates the power measurement from different sources:
+
+### Instantaneous Power
+
+```cpp
+int power = rtConfig->watts.getValue();
+```
+
+Sources (in priority order):
+1. Connected power meter via BLE client
+2. Connected cadence sensor + power table lookup
+3. Simulated power value (if simulation enabled)
+4. Power calculated from resistance and cadence
+
+### Wheel & Crank Revolution Data
+
+```cpp
+cpm.cumulativeWheelRevolutions = spinBLEClient.cscCumulativeWheelRev;
+cpm.lastWheelEventTime = spinBLEClient.cscLastWheelEvtTime;
+cpm.cumulativeCrankRevolutions = spinBLEClient.cscCumulativeCrankRev;
+cpm.lastCrankEventTime = spinBLEClient.cscLastCrankEvtTime;
+```
+
+Revolution data comes from:
+1. Connected CSC sensor (preferred)
+2. Connected power meter with revolution data
+3. Internal calculation based on cadence
+
+## Time Units & Rollover
+
+<Warning>
+  Event times use fractional second units and **roll over**. Apps must handle rollover when calculating speed and cadence.
+</Warning>
+
+**Wheel Event Time:**
+- Resolution: 1/2048 seconds (~0.488 ms)
+- Range: 0 to 65535 ticks
+- Rollover: Every 32 seconds (65536 / 2048)
+
+**Crank Event Time:**
+- Resolution: 1/1024 seconds (~0.977 ms)
+- Range: 0 to 65535 ticks  
+- Rollover: Every 64 seconds (65536 / 1024)
+
+## Cadence Calculation
+
+Apps calculate cadence from consecutive crank revolution notifications:
+
+```javascript
+function calculateCadence(prevRev, prevTime, currRev, currTime) {
+  let deltaRev = currRev - prevRev;
+  let deltaTime = currTime - prevTime;
+  
+  // Handle rollover
+  if (deltaTime < 0) deltaTime += 65536;
+  
+  // Convert to RPM
+  let cadence = (deltaRev * 1024 * 60) / deltaTime;
+  return cadence;
+}
+```
+
+## Power Correction Factor
+
+If SmartSpin2k is connected to a power meter as a client, it can apply a correction factor before broadcasting:
+
+```cpp
+// Power correction is applied in FTMS ERG mode, not in CPS broadcast
+// CPS broadcasts the raw measured/calculated power value
+int power = rtConfig->watts.getValue();
+```
+
+The `powerCorrectionFactor` setting (accessible via custom characteristic) is used for ERG mode control, not for power broadcast.
+
+## Update Rate
+
+The Cycling Power Measurement characteristic is notified on every update cycle (typically 100-200ms) when a client is subscribed.
+
+## Logging Format
+
+SmartSpin2k logs power broadcasts:
+
+```
+CPS(CPM)[ CD(90.50) PW(245) ]
+```
+
+Where:
+- `CD`: Cadence in RPM (calculated)
+- `PW`: Power in watts
+
+## DirCon Integration
+
+Power measurements are also broadcast via the DirCon TCP protocol:
+
+```cpp
+DirConManager::notifyCharacteristic(
+  NimBLEUUID(CYCLINGPOWERSERVICE_UUID), 
+  cyclingPowerMeasurementCharacteristic->getUUID(), 
+  data, 
+  length
+);
+```
+
+This allows remote monitoring and control applications to receive power data over WiFi/TCP.
+
+## Implementation Notes
+
+- All multi-byte values use **little-endian** byte order
+- Flags are set dynamically based on available data
+- The service is always advertised, even if power meter is not connected
+- When no external power source is available, simulated or calculated power is used
+- Revolution counters are maintained across the device lifetime (reset on reboot)
+
+## Compatibility
+
+The Cycling Power Service implementation is compatible with:
+
+- Zwift
+- TrainerRoad
+- Sufferfest
+- Rouvy
+- Kinomap
+- PerfPRO Studio
+- Golden Cheetah
+- Garmin head units
+- Wahoo head units
+- Any app supporting standard BLE Cycling Power Service
+
+## Reference
+
+- [Cycling Power Profile v1.1](https://www.bluetooth.com/specifications/specs/cpp-1-1/)
+- Source: `BLE_Cycling_Power_Service.cpp`
+- Definitions: `BLE_Definitions.h` (lines 213-296)

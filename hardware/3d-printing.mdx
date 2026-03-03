@@ -1,0 +1,586 @@
+---
+title: 3D Printing Guide
+description: Complete guide to 3D printing cases, mounts, gears, and accessories for SmartSpin2k
+---
+
+# 3D Printing Guide
+
+This guide covers all 3D printed components for SmartSpin2k, including print settings, materials, and tips for successful prints.
+
+## Overview
+
+SmartSpin2k requires several 3D printed components depending on your hardware version and bike model. All STL files are available in the [Hardware directory](https://github.com/doudar/SmartSpin2k/tree/develop/Hardware).
+
+### Required Prints (All Versions)
+
+- **Case** - Houses electronics and gearbox
+- **Gears** - 11T and 40T drive gears (11:40 ratio)
+- **Knob Cup** - Retains insert and connects to gearbox
+- **Insert** - Bike-specific knob adaptor
+
+### Additional Prints (Version Dependent)
+
+- **Arm** - Connects SS2k to bike mount (V2 Direct Mount & V3)
+- **Bike Mount** - Attaches to head tube (V2 Direct Mount & V3)
+- **Shifters** - Manual resistance controls (optional, all versions)
+- **Mounting Strap** - For V2 Universal Mount
+
+## Recommended Print Settings
+
+### General Settings
+
+<Tabs>
+  <Tab title="Case Parts">
+    **Material:** PLA, PETG, or ABS
+    
+    | Setting | Value | Notes |
+    |---------|-------|-------|
+    | **Layer Height** | 0.2mm | Good balance of speed/quality |
+    | **Nozzle Size** | 0.4mm | 0.6mm also works |
+    | **Infill** | 40% | Provides good strength |
+    | **Infill Pattern** | Grid or Gyroid | |
+    | **Perimeters/Walls** | 4 | Critical for strength |
+    | **Top/Bottom Layers** | 5 | Solid surfaces |
+    | **Supports** | From bed only | For case halves |
+    | **Brim/Raft** | Not needed | Unless bed adhesion issues |
+    
+    **Temperature (PLA):**
+    - Nozzle: 200-210°C
+    - Bed: 60°C
+    
+    **Temperature (PETG):**
+    - Nozzle: 230-245°C
+    - Bed: 75-85°C
+  </Tab>
+  
+  <Tab title="Gears">
+    **Material:** PLA or PETG (PETG recommended for wear resistance)
+    
+    | Setting | Value | Notes |
+    |---------|-------|-------|
+    | **Layer Height** | 0.15-0.2mm | Smoother teeth |
+    | **Nozzle Size** | 0.4mm | Precision required |
+    | **Infill** | 100% | Maximum strength |
+    | **Perimeters/Walls** | 4-5 | Solid gear teeth |
+    | **Top/Bottom Layers** | 5-6 | Completely solid |
+    | **Supports** | None | Orient properly |
+    | **Speed** | 40-50mm/s | Slower for accuracy |
+    
+    <Warning>
+      Gears must be printed at 100% infill for reliable operation. Lower infill will cause premature failure.
+    </Warning>
+  </Tab>
+  
+  <Tab title="Arm & Mount">
+    **Material:** PLA, PETG, or ABS (PETG recommended for load-bearing)
+    
+    | Setting | Value | Notes |
+    |---------|-------|-------|
+    | **Layer Height** | 0.2mm | Standard quality |
+    | **Nozzle Size** | 0.4mm | |
+    | **Infill** | 40-50% | Higher for strength |
+    | **Infill Pattern** | Rectilinear or Grid | |
+    | **Perimeters/Walls** | 4 | Load bearing parts |
+    | **Top/Bottom Layers** | 5 | |
+    | **Supports** | As needed | Check orientation |
+  </Tab>
+  
+  <Tab title="Shifters (TPU)">
+    **Material:** TPU (95A durometer recommended)
+    
+    | Setting | Value | Notes |
+    |---------|-------|-------|
+    | **Layer Height** | 0.2mm | |
+    | **Nozzle Size** | 0.4mm | |
+    | **Infill** | 20% | Flexible parts |
+    | **Infill Pattern** | Monotonic | 90° along strap length |
+    | **Perimeters/Walls** | 3 | |
+    | **Top Pattern** | Ironing | Watertight finish |
+    | **Print Speed** | 20-30mm/s | Slow for TPU |
+    | **Cooling** | 75% | Adjust for printer |
+    | **Supports** | Disabled | Design prints without |
+    | **Retraction** | Minimal | 2-3mm at most |
+    
+    **Special Settings for Water Resistance:**
+    - Add height range modifier at 8.85-13.70mm
+    - Use Ironing for solid infill pattern
+    - Use Concentric for top infill pattern
+    
+    <Note>
+      TPU printing is tricky. Print test_housing.stl first to dial in settings before printing full strap.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Component-Specific Guides
+
+### Case Parts
+
+<Accordion title="V3 Integrated PCB Case">
+  **Files Location:** `Hardware/V3 - Integrated PCB/Case/`
+  
+  **Required Parts:**
+  - Case body (specific STL files in V3 directory)
+  
+  **Print Settings:**
+  - Material: PLA or PETG
+  - Infill: 40%
+  - Perimeters: 4
+  - Supports: From bed only
+  - Orientation: As designed (flat side down)
+  
+  **Post-Processing:**
+  1. Remove supports carefully
+  2. Test fit PCB before installing heat-set inserts
+  3. Install M3x5x4mm heat-set inserts
+  4. Clean any stringing or artifacts
+</Accordion>
+
+<Accordion title="V2 Direct Mount Case">
+  **Files Location:** `Hardware/V2 - Through Hole/Direct Mount/Case/`
+  
+  **Required Parts:**
+  - body-left.stl
+  - body-right.stl
+  
+  **Variants:**
+  - **Long Case** - For 115mm+ clearance bikes
+  - **Short Case** - For 81mm+ clearance bikes
+  
+  **Print Settings:**
+  - Material: PLA or PETG
+  - Infill: 40%
+  - Perimeters: 4
+  - Supports: From bed only
+  
+  **Assembly Notes:**
+  - Requires M3 heat-set inserts (4-8 pieces)
+  - Uses M3 screws to join case halves
+  - Test fit all components before final assembly
+</Accordion>
+
+<Accordion title="V2 Universal Mount Case">
+  **Files Location:** `Hardware/V2 - Through Hole/Universal Mount/`
+  
+  **Required Parts:**
+  - Body_Left.stl
+  - Body_Right.stl
+  - Mounting_For_New_Case.STL
+  
+  **Print Settings:**
+  - Material: PLA or PETG
+  - Infill: 40%
+  - Perimeters: 4
+  - Supports: From bed only
+  
+  **Assembly Notes:**
+  - Uses #8 wood screws (4 pieces)
+  - No heat-set inserts required
+  - Mounting strap attaches to bike frame
+  
+  **PrusaSlicer Profile:**
+  A .3mf file is provided with everything arranged for CR-10 printer:
+  - Metal hotend, 0.6mm nozzle
+  - Pre-configured settings
+  - Adjust for your specific printer
+</Accordion>
+
+<Accordion title="V2 Ultra Short Mod">
+  **Files Location:** `Hardware/V2 - Through Hole/Ultra Short Mod/`
+  
+  **When to Use:**
+  - Bikes with less than 49mm clearance
+  - Very compact bike geometries
+  
+  **Print Settings:**
+  - Material: PETG recommended (high stress)
+  - Infill: 40-50%
+  - Perimeters: 4
+  - Print slowly for accuracy
+  
+  <Warning>
+    Ultra Short Mod requires precise printing and careful assembly. Test fit thoroughly.
+  </Warning>
+</Accordion>
+
+### Gears
+
+**Files Location:** `Hardware/Common Assets/Gears/`
+
+**Required Parts:**
+- 11T spur gear: `Spur gear 1M 11T.STL`
+- 40T spur gear: `SS2K_40T_Mod1_Spur_Gear.STL` (plastic shaft) OR `40T HEX` (for metal 5/16" bolt shaft)
+
+**Print Settings:**
+- Material: PLA or PETG (PETG preferred)
+- Layer height: 0.15-0.2mm
+- **Infill: 100%** (critical!)
+- Perimeters: 4-5
+- Speed: 40-50mm/s (slower for accuracy)
+- No supports needed
+
+**Tips:**
+- Orient gears flat on bed
+- Use glue stick for bed adhesion
+- Let cool completely before removing
+- Test gear mesh before installing in case
+
+**HEX Shaft Option:**
+- Print `40T HEX` version if using metal shaft
+- Requires 5/16" bolt, washers, and nuts
+- More durable than plastic shaft
+- Apply Loctite to nuts after assembly
+
+### Knob Cups
+
+**Files Location:** `Hardware/Common Assets/KnobCups/`
+
+**Options:**
+- **Standard Knob Cup** - Most common, plastic shaft
+- **Knob Cup HEX** - For metal 5/16" bolt shaft
+
+**Print Settings:**
+- Material: PLA or PETG
+- Infill: 40%
+- Perimeters: 4
+- No supports needed
+
+**Assembly:**
+1. Print knob cup
+2. Print insert separately (bike-specific)
+3. Insert slides into knob cup
+4. For custom builds, combine in slicer and print as one piece
+
+### Inserts
+
+**Files Location:** `Hardware/Common Assets/Inserts/`
+
+**40+ Bike Models Supported** - See [Bike Compatibility](/hardware/bike-compatibility) for complete list.
+
+**Common Inserts:**
+- 50mm.STL, 60mm.STL, 65mm.STL (generic sizes)
+- Peloton_7_flat.STEP
+- Schwinn_IC4.STL
+- Echelon_60mm.STL
+- Bowflex_Velocore.STL
+- Many more specific models
+
+**Print Settings:**
+- Material: PLA (or TPU for irregular knobs)
+- Infill: 40%
+- Perimeters: 4
+- No supports typically needed
+
+**Sizing:**
+- Inserts come in pairs of slightly different sizes
+- If one doesn't fit, try the alternate size
+- Check Design_Reference_Photos directory for measurements
+
+**Custom Inserts:**
+- CAD files available in F3D_Designs, Alibre, and Solidworks formats
+- Measure your knob diameter and depth
+- Modify existing design or create new one
+
+### Arm
+
+**Files Location:** `Hardware/Common Assets/Arm/`
+
+**Available Lengths:** 20mm to 165mm in 5mm increments
+
+**Choosing Arm Length:**
+1. Measure from back of head tube to center of knob
+2. Subtract 65mm
+3. Result is your required arm length
+4. See [arm sizing table](/hardware/v3-integrated-pcb#arm-length-selection)
+
+**Print Settings:**
+- Material: PETG or PLA (PETG recommended)
+- Infill: 40-50%
+- Perimeters: 4
+- Layer height: 0.2mm
+
+**Custom Lengths:**
+- [Thingiverse Customizer](https://www.thingiverse.com/thing:5732525)
+- Adjust length parameter to exact measurement
+- Export and print custom STL
+
+**Components:**
+- Arm body (various lengths)
+- Arm hook (_arm hook.stl) - mandatory
+
+### Bike Mount
+
+**Files Location:** `Hardware/Common Assets/Bike Mount/`
+
+**Bike-Specific Mounts:**
+- Bowflex C7.stl
+- Echelon Mount.stl
+- IC Bike SE.stl
+- Joroto X2.step
+- LeMond Promaster.stl
+- Life Fitness IC7.stl, IC8.step
+- Peloton.step, Peloton low handlebars.stl
+- SchwinnAC.stl
+- Stages SC3.step
+- Yesoul S3.stl
+- And more...
+
+**Print Settings:**
+- Material: PETG or ABS (high strength)
+- Infill: 40-50%
+- Perimeters: 4
+- Supports: As needed for geometry
+
+**Custom Bike Mount:**
+- [Thingiverse Customizer](https://www.thingiverse.com/thing:5738735)
+- Measure yoke width of your head tube
+- Adjust YokeWidth parameter
+- May need to adjust YokeLength for some geometries
+
+**Example: Yosuda Bike Plus**
+- YokeWidth: 30mm
+- Use customizer to generate STL
+
+### Shifters
+
+**Files Location:** `Hardware/Common Assets/Shifters/`
+
+**Components:**
+- strap.stl - Main strap body (TPU)
+- plug.stl - x2 (TPU)
+- retainer.stl - (TPU)
+- test_housing.stl - Test print (TPU)
+- shifter_set.stl - Complete set on one plate
+
+**Material:** TPU (95A durometer)
+
+**Print Settings:**
+
+| Setting | Value |
+|---------|-------|
+| Layer height | 0.2mm |
+| Nozzle | 0.4mm |
+| Perimeters | 3 |
+| Infill | 20% |
+| Infill angle | 90° (along strap length) |
+| Top/bottom pattern | Monotonic |
+| Cooling | 75% (adjust for printer) |
+| Speed | Slow (20-30mm/s) |
+| Supports | Disabled |
+
+**Height Range Modifier (8.85-13.70mm):**
+- Solid infill pattern: Ironing
+- Top infill pattern: Concentric
+- Creates watertight seal against sweat
+
+**Assembly:**
+1. Print all parts in TPU
+2. Install momentary microswitches
+3. Hot glue switches in place
+4. Connect RCA to 3.5mm audio cable
+5. Seal with hot glue
+
+**Testing:**
+- Print test_housing.stl first
+- Verifies bridging layers are sealed
+- Uses less material and time
+- Dial in settings before full print
+
+<Warning>
+  TPU bridging is tricky. Good cooling and slow speed are essential for watertight prints.
+</Warning>
+
+## Material Guide
+
+### PLA (Polylactic Acid)
+
+**Pros:**
+- Easiest to print
+- Good detail and surface finish
+- Widely available
+- Low cost
+- Biodegradable
+
+**Cons:**
+- Lower heat resistance (~60°C)
+- More brittle than PETG
+- Can creep under sustained load
+
+**Best For:**
+- Case parts (if not in hot environment)
+- Inserts and knob cups
+- Testing and prototypes
+
+### PETG (Polyethylene Terephthalate Glycol)
+
+**Pros:**
+- More durable than PLA
+- Better heat resistance (~80°C)
+- More flexible, less brittle
+- Good layer adhesion
+- Chemical resistant
+
+**Cons:**
+- More stringing than PLA
+- Requires higher temps
+- More prone to moisture absorption
+
+**Best For:**
+- Gears (wear resistance)
+- Arms and mounts (load-bearing)
+- Cases in warm environments
+
+### ABS (Acrylonitrile Butadiene Styrene)
+
+**Pros:**
+- High strength
+- Good heat resistance (~100°C)
+- Can be acetone smoothed
+- Durable
+
+**Cons:**
+- Warping issues
+- Requires enclosure
+- Unpleasant fumes
+- Harder to print
+
+**Best For:**
+- High-temperature environments
+- Maximum durability required
+
+### TPU (Thermoplastic Polyurethane)
+
+**Pros:**
+- Flexible and shock-absorbing
+- Excellent wear resistance
+- Good grip
+
+**Cons:**
+- Difficult to print
+- Requires slow speeds
+- Prone to stringing
+- Can't use high retraction
+
+**Best For:**
+- Shifters only (required)
+- Optional: inserts for irregular knobs
+
+## Troubleshooting
+
+<Accordion title="Gears are noisy or skip">
+  **Possible Causes:**
+  - Insufficient infill (must be 100%)
+  - Under-extrusion creating weak teeth
+  - Poor layer adhesion
+  - Incorrect gear mesh alignment
+  
+  **Solutions:**
+  - Reprint gears at 100% infill
+  - Calibrate extruder e-steps
+  - Increase nozzle temperature slightly
+  - Check gear alignment in assembly
+</Accordion>
+
+<Accordion title="Case parts don't fit together">
+  **Possible Causes:**
+  - Printer dimensional accuracy issues
+  - Warping during print
+  - Supports not removed fully
+  - Wrong filament type (shrinkage)
+  
+  **Solutions:**
+  - Calibrate printer (XYZ steps, flow rate)
+  - Use brim for better bed adhesion
+  - Clean support material completely
+  - Try PLA if using ABS (less shrinkage)
+  - Light sanding of mating surfaces
+</Accordion>
+
+<Accordion title="Shifter strap not watertight">
+  **Possible Causes:**
+  - Bridging layers have gaps
+  - Insufficient cooling
+  - Print speed too fast
+  - Missing height range modifier settings
+  
+  **Solutions:**
+  - Print test_housing.stl first
+  - Increase cooling to 75%+
+  - Slow down to 20-30mm/s
+  - Apply ironing and concentric top fill at 8.85-13.70mm
+  - Use monotonic infill pattern
+</Accordion>
+
+<Accordion title="Insert doesn't fit knob">
+  **Possible Causes:**
+  - Wrong insert model selected
+  - Printer over-extrusion
+  - Knob dimensions vary from design
+  
+  **Solutions:**
+  - Try alternate size (most bikes have 2 versions)
+  - Calibrate flow rate / extrusion multiplier
+  - Measure knob and compare to Design_Reference_Photos
+  - Scale insert in slicer (95-105% typically safe)
+  - Print in TPU for flexible fit
+</Accordion>
+
+<Accordion title="Arm or mount breaking under stress">
+  **Possible Causes:**
+  - Insufficient perimeters/walls
+  - Low infill percentage
+  - Layer adhesion issues
+  - Wrong material (PLA creep)
+  
+  **Solutions:**
+  - Use PETG or ABS instead of PLA
+  - Increase perimeters to 4-5
+  - Increase infill to 50%
+  - Increase nozzle temp for better layer bonding
+  - Orient print for strength (layers perpendicular to stress)
+</Accordion>
+
+## Print Time Estimates
+
+| Component | Material | Estimated Time | Notes |
+|-----------|----------|---------------|-------|
+| Case (both halves) | PLA/PETG | 12-18 hours | Depends on infill |
+| 11T Gear | PLA/PETG | 1-2 hours | 100% infill |
+| 40T Gear | PLA/PETG | 3-5 hours | 100% infill |
+| Knob Cup | PLA/PETG | 2-3 hours | |
+| Insert | PLA | 1-2 hours | Varies by model |
+| Arm | PLA/PETG | 2-4 hours | Depends on length |
+| Bike Mount | PETG | 3-6 hours | Varies by model |
+| Shifter Set | TPU | 8-12 hours | Slow speeds |
+
+**Total for Complete Build:** ~35-55 hours of printing
+
+## Pre-Print Checklist
+
+- [ ] Downloaded correct STL files for your version (V2/V3)
+- [ ] Selected appropriate bike-specific insert
+- [ ] Chosen correct arm length (if using Direct Mount)
+- [ ] Selected bike mount model (if using Direct Mount)
+- [ ] Calibrated printer (bed level, e-steps, flow)
+- [ ] Verified filament is dry (especially PETG, TPU)
+- [ ] Sliced with correct settings (infill, perimeters)
+- [ ] Checked gears are set to 100% infill
+- [ ] Previewed layers in slicer for issues
+- [ ] Prepared bed surface (glue stick, tape, etc.)
+
+## Post-Processing Tips
+
+1. **Remove Supports Carefully** - Use flush cutters, don't force
+2. **Clean Up Stringing** - Heat gun or lighter (carefully)
+3. **Sand Mating Surfaces** - 220 grit for smooth fit
+4. **Test Fit Before Assembly** - Ensure all parts fit together
+5. **Heat-Set Inserts** - 200-220°C, press gently and straight
+6. **Dry Fit Screws** - Check thread engagement before final assembly
+
+## Next Steps
+
+- Review [Components List](/hardware/components) for non-printed parts
+- Check [Bike Compatibility](/hardware/bike-compatibility) for your bike
+- Download STL files from [GitHub Hardware Directory](https://github.com/doudar/SmartSpin2k/tree/develop/Hardware)
+- Join [Facebook Group](https://www.facebook.com/groups/716297469953492/) to share prints and get help
+- Start printing and building!

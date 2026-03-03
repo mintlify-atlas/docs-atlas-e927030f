@@ -1,0 +1,142 @@
+---
+title: SmartSpin2k - Transform Your Spin Bike Into a Smart Trainer
+description: Open-source DIY hardware and firmware that brings automatic resistance control, ERG mode, and Zwift compatibility to any spin bike with a resistance knob.
+---
+
+<img src="https://raw.githubusercontent.com/doudar/SmartSpin2k/develop/Pictures/ss2k_wiki_banner.png" alt="SmartSpin2k Banner" />
+
+## What is SmartSpin2k?
+
+SmartSpin2k is an open-source DIY project that transforms any spin bike with a resistance control knob into a fully-featured smart trainer. Built around an ESP32 microcontroller and a stepper motor, SmartSpin2k automatically controls your bike's resistance, allowing you to connect to popular training apps like Zwift, TrainerRoad, and Rouvy.
+
+<CardGroup cols={2}>
+  <Card title="Features" icon="star" href="/features">
+    Explore automatic resistance control, ERG mode, power calibration, and BLE connectivity
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get your SmartSpin2k up and running in under an hour
+  </Card>
+  <Card title="Hardware Build" icon="screwdriver-wrench" href="https://github.com/doudar/SmartSpin2k/blob/develop/SS2kR3BuildingInstructions.pdf">
+    Complete building instructions for Rev 3 hardware
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Set up WiFi, calibrate power, and configure BLE devices
+  </Card>
+</CardGroup>
+
+## How It Works
+
+SmartSpin2k uses a stepper motor mounted to your spin bike's resistance knob. When you're riding in Zwift or another training app:
+
+1. **The app sends resistance commands** via Bluetooth Low Energy (BLE) using standard FTMS protocol
+2. **SmartSpin2k receives the command** and calculates the required knob position
+3. **The stepper motor turns the knob** to match the target resistance or power output
+4. **Your bike's resistance changes automatically** as you climb hills, enter ERG mode workouts, or race with others
+
+<Note>
+  SmartSpin2k works with any spin bike that has a manual resistance knob - no need for an expensive smart trainer!
+</Note>
+
+## Key Capabilities
+
+### Automatic Resistance Control
+SmartSpin2k responds to incline commands from your training app, automatically adjusting your bike's resistance to simulate hills and terrain changes. This creates an immersive training experience without manual intervention.
+
+### ERG Mode for Structured Workouts
+In ERG mode, SmartSpin2k maintains a target power output by automatically adjusting resistance as your cadence changes. This is essential for structured interval training and following power-based workout plans.
+
+From `ERG_Mode.h:26`:
+```cpp
+void runERG();      // Main control function for ERG Mode
+void computeErg();  // Calculate resistance adjustments
+```
+
+### Power Calibration System
+Many spin bikes have inaccurate power meters. SmartSpin2k includes a power table calibration system that learns your bike's actual power curve and provides accurate power readings.
+
+From `Power_Table.h:25`:
+```cpp
+// Pick up new power value and put them into the power table
+void processPowerValue(PowerBuffer& powerBuffer, int cadence, Measurement power);
+
+// returns target position for given cadence and watts
+int32_t lookup(int watts, int cad);
+```
+
+### Bluetooth Connectivity
+SmartSpin2k broadcasts multiple BLE services simultaneously:
+- **FTMS (Fitness Machine Service)** - Standard protocol for training apps
+- **Cycling Power Service** - Power meter data
+- **Cycling Speed & Cadence** - Real-time metrics
+- **Heart Rate Service** - Pass-through from connected HR monitors
+
+## Community & Support
+
+<CardGroup cols={2}>
+  <Card title="Facebook Group" icon="facebook" href="https://www.facebook.com/groups/716297469953492/">
+    Join 2,000+ SmartSpin2k users for support and tips
+  </Card>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/doudar/SmartSpin2k">
+    View source code, report issues, and contribute
+  </Card>
+  <Card title="Companion App" icon="mobile" href="https://github.com/doudar/SS2kConfigApp">
+    iOS and Android app for easy configuration
+  </Card>
+  <Card title="Purchase Kits" icon="shopping-cart" href="https://www.smartspin2k.com/purchase-kits">
+    Pre-assembled kits available for purchase
+  </Card>
+</CardGroup>
+
+## Compatible Training Apps
+
+SmartSpin2k works with any app that supports standard BLE FTMS protocol:
+
+- **Zwift** - Virtual cycling and racing
+- **TrainerRoad** - Structured training plans
+- **Rouvy** - Augmented reality cycling
+- **MyWoosh** - Virtual training platform
+- **Kinomap** - Real-world video routes
+- **And many more...**
+
+## Open Source Hardware & Software
+
+SmartSpin2k is completely open source:
+- **Hardware**: [CERN Open Hardware License v2](https://github.com/doudar/SmartSpin2k/blob/develop/Hardware/LICENSE)
+- **Software**: [GNU GPL v2](https://github.com/doudar/SmartSpin2k/blob/develop/LICENSE)
+- **Platform**: ESP32 with Arduino framework
+- **Build System**: PlatformIO
+
+<Tip>
+  The entire build process takes under an hour with basic tools and a 3D printer. All STL files and PCB designs are freely available.
+</Tip>
+
+## What You Need
+
+To build SmartSpin2k, you'll need:
+
+- A spin bike with a resistance control knob
+- 3D printer access (or purchase pre-printed parts)
+- ESP32 development board
+- NEMA 17 stepper motor
+- TMC2208 or TMC2209 stepper driver
+- Basic soldering skills
+- Standard tools (screwdriver, wire strippers)
+
+See the [Quick Start guide](/quickstart) for detailed requirements and assembly instructions.
+
+## Next Steps
+
+<Steps>
+  <Step title="Explore Features">
+    Learn about [all the capabilities](/features) SmartSpin2k offers
+  </Step>
+  <Step title="Build Your Hardware">
+    Follow the [building instructions](https://github.com/doudar/SmartSpin2k/blob/develop/SS2kR3BuildingInstructions.pdf)
+  </Step>
+  <Step title="Flash Firmware">
+    Get the latest firmware from [GitHub Releases](https://github.com/doudar/SmartSpin2k/releases)
+  </Step>
+  <Step title="Configure & Ride">
+    Complete the [Quick Start guide](/quickstart) and start training
+  </Step>
+</Steps>

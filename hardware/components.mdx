@@ -1,0 +1,349 @@
+---
+title: Components & Bill of Materials
+description: Complete component lists, BOM, and sourcing information for SmartSpin2k hardware
+---
+
+# Components & Bill of Materials
+
+This page contains comprehensive component lists for all SmartSpin2k hardware versions. Choose the BOM for your version and follow sourcing recommendations.
+
+## V3 Integrated PCB Components
+
+### PCB Components (SMT Assembled)
+
+<Warning>
+  V3 PCB components are Surface Mount Technology (SMT) and should be ordered pre-assembled. The list below is for reference and custom manufacturing only.
+</Warning>
+
+<Tabs>
+  <Tab title="Main ICs">
+    | Component | Part Number | Package | LCSC | Quantity |
+    |-----------|-------------|---------|------|----------|
+    | **ESP32 Module** | ESP32-WROOM-32D | ESP32-WROOM-32 | C473012 | 1 |
+    | **Stepper Driver** | TMC2209-LA-T | QFN-28 5x5mm | C465949 | 1 |
+    | **USB to Serial** | CP2102-GMR | QFN-28 5x5mm | C6568 | 1 |
+    | **Serial Driver** | MAX3232 | TSSOP-16 | C13482 | 1 |
+    | **Buck Converter** | TPS5430DDA | SOIC-8-EP | C9864 | 1 |
+    | **LDO Regulator** | LM1117-3.3 | SOT-223-3 | C6186 | 1 |
+    | **ESD Protection** | SRV05-4 | SOT-23-6 | C85364 | 1 |
+  </Tab>
+  
+  <Tab title="Passives">
+    | Component | Value | Package | LCSC | Quantity |
+    |-----------|-------|---------|------|----------|
+    | **Resistors 0Ω** | 0Ω (5%) | 0402 | C25086 | 3 |
+    | **Resistors 200Ω** | 200Ω | 0402 | C25087 | 2 |
+    | **Resistors 330Ω** | 330Ω | 0402 | C25104 | 4 |
+    | **Resistors 1kΩ** | 1kΩ | 0402 | C11702 | 1 |
+    | **Resistors 4.7kΩ** | 4.7kΩ | 0402 | C25900 | 1 |
+    | **Resistors 10kΩ** | 10kΩ | 0402 | C25744 | 5 |
+    | **Resistors 20kΩ** | 20kΩ | 0805 | C17560 | 1 |
+    | **Resistors 22kΩ** | 22kΩ | 0402 | C25768 | 1 |
+    | **Resistors 100kΩ** | 100kΩ | 0402 | C25741 | 1 |
+    | **Resistors 1MΩ** | 1MΩ | 0402 | C26083 | 1 |
+    | **Resistors 549Ω** | 549Ω | 0402 | C284613 | 1 |
+    | **Resistors 5.9kΩ** | 5.9kΩ | 0603 | C140081 | 1 |
+    | **Resistors 80mΩ** | 80mΩ | 1206 | C601089 | 2 |
+  </Tab>
+  
+  <Tab title="Capacitors">
+    | Component | Value | Voltage | Package | LCSC | Qty |
+    |-----------|-------|---------|---------|------|-----|
+    | **Ceramic 0.1μF** | 100nF | 10V | 0402 | C1525 | 10 |
+    | **Ceramic 100nF** | 100nF | 10V | 0805 | C49678 | 4 |
+    | **Ceramic 1μF** | 1μF | - | 0603 | C15849 | 3 |
+    | **Ceramic 2.2μF** | 2.2μF | - | 0402 | C12530 | 1 |
+    | **Ceramic 4.7μF** | 4.7μF | - | 0805 | C1779 | 2 |
+    | **Ceramic 4.7μF** | 4.7μF | 50V | 1206 | C29823 | 1 |
+    | **Ceramic 10μF** | 10μF | 50V | 0805 | C440198 | 1 |
+    | **Ceramic 10μF** | 10μF | 50V | 1206 | C13585 | 1 |
+    | **Ceramic 10μF** | 10μF | - | 0603 | C96446 | 1 |
+    | **Ceramic 0.01μF** | 10nF | - | 0805 | C1710 | 1 |
+    | **Ceramic 22nF** | 22nF | 50V | 0805 | C1729 | 1 |
+    | **Ceramic 150pF** | 150pF | - | 0805 | C1716 | 1 |
+    | **Ceramic 1.0μF** | 1.0μF | - | 0805 | C28323 | 1 |
+    | **Ceramic 1.5nF** | 1.5nF | - | 0805 | C1717 | 1 |
+    | **Electrolytic** | 100μF | - | 1206 | C15008 | 1 |
+    | **Electrolytic** | 100μF | 50V | 8x10mm | C445063 | 2 |
+  </Tab>
+  
+  <Tab title="Other Components">
+    | Component | Part Number | Package | LCSC | Qty |
+    |-----------|-------------|---------|------|-----|
+    | **Inductor** | Iron Core | 12x12mm H8mm | C182183 | 1 |
+    | **Transistor** | S8050 | SOT-23 | C2146 | 2 |
+    | **Schottky Diode** | - | SMA | C22452 | 2 |
+    | **LED Red** | - | 0603 | C72038 | 1 |
+    | **LED Green** | - | 0603 | C72041 | 1 |
+    | **LED Blue** | - | 0603 | C72043 | 1 |
+    | **LED Status** | - | 0603 | C2286 | 1 |
+    | **Power Switch** | EG1218 | SPDT | C128953 | 1 |
+    | **Push Button** | SW_Push | Alps SKRK | C354946 | 2 |
+  </Tab>
+  
+  <Tab title="Connectors">
+    | Component | Type | Part Number | Notes |
+    |-----------|------|-------------|-------|
+    | **USB Micro-B** | Female | 10118194-0001LF (C10418) | J4 |
+    | **JST-XH 4-pin** | Vertical | B4B-XH-AMLFSN | J1, J2 |
+    | **JST-XH 8-pin** | Vertical | B8B-XH-A_LFSN | J3 |
+  </Tab>
+</Tabs>
+
+### V3 Additional Components (User Provided)
+
+| Component | Specification | Quantity | Notes |
+|-----------|--------------|----------|-------|
+| **Stepper Motor** | NEMA 17, 1.8°/step | 1 | With JST-XH connector |
+| **Power Supply** | 12-24V DC, 2A+ | 1 | Barrel jack or wire leads |
+| **JST-XH Cables** | 4-pin, 150mm+ | 2 | Motor and shifter |
+| **Micro USB Cable** | Data capable | 1 | For programming |
+| **M3 Heat Inserts** | M3x5x4mm | 4-8 | For case assembly |
+| **M3 Screws** | M3x8 or M3x10 | 4-8 | Case fasteners |
+| **M5 Screws** | M5x12mm | 1 | Arm connection |
+| **M5 Screws** | M5x30mm | 2 | Mount and case |
+| **M5 Nuts** | Standard | 3 | For M5 screws |
+
+## V2 Through Hole Components
+
+### Electronics BOM
+
+<Tabs>
+  <Tab title="Main Components">
+    | Component | Part Number | Specifications | Quantity |
+    |-----------|-------------|----------------|----------|
+    | **ESP32 DevKit** | ESP32-WROOM-32 | 30-pin devboard | 1 |
+    | **Stepper Driver** | TMC2209 or A4988 | Carrier board | 1 |
+    | **Stepper Motor** | NEMA 17 | 12V bipolar, 1.8°/step | 1 |
+    | **Voltage Regulator** | LM1117-3.3 | 3.3V, 800mA | 1 |
+    | **Power Supply** | 12-24V DC | 2A minimum | 1 |
+  </Tab>
+  
+  <Tab title="Resistors">
+    | Value | Package | Quantity | Purpose |
+    |-------|---------|----------|----------|
+    | 10kΩ | 1/4W through-hole | 3-5 | Pull-ups |
+    | 1kΩ | 1/4W through-hole | 2-3 | Current limiting |
+    | 330Ω | 1/4W through-hole | 2 | LED current |
+    | 100Ω | 1/4W through-hole | 2 | Misc |
+  </Tab>
+  
+  <Tab title="Capacitors">
+    | Value | Type | Voltage | Quantity | Purpose |
+    |-------|------|---------|----------|----------|
+    | 100μF | Electrolytic | 25V+ | 2-3 | Power filtering |
+    | 10μF | Electrolytic | 16V+ | 2 | Bypass |
+    | 0.1μF | Ceramic | 50V | 5-10 | Decoupling |
+  </Tab>
+  
+  <Tab title="Other Components">
+    | Component | Specification | Quantity | Notes |
+    |-----------|--------------|----------|-------|
+    | **Diodes** | 1N4001 or 1N4007 | 2-3 | Flyback protection |
+    | **LEDs** | 5mm, various colors | 2-3 | Status indicators |
+    | **Headers** | 2.54mm pitch | As needed | For devkits |
+    | **JST-XH Connector** | 4-pin | 1 | Motor connection |
+    | **3.5mm Audio Jack** | Panel mount | 1 | Shifter input |
+    | **Barrel Jack** | 2.1mm | 1 | Power input |
+    | **SPST Switch** | Toggle or rocker | 1 | Power switch |
+  </Tab>
+</Tabs>
+
+### V2 Hardware (Direct Mount)
+
+| Component | Specification | Quantity | Notes |
+|-----------|--------------|----------|-------|
+| **M3 Heat Inserts** | M3x5x4mm (5mm OD) | 4-8 | [AliExpress](https://www.aliexpress.com/item/4000232858343.html) |
+| **M3 Screws** | M3x8 or M3x10 | 4 | Case assembly |
+| **M5 Screw** | M5x12mm | 1 | Arm to SS2k |
+| **M5 Screws** | M5x30mm | 2 | Mount and case |
+| **M5 Nuts** | Standard | 3 | For M5 screws |
+| **Velcro Strap** | 1/2" x 8" | 1 | [Amazon](https://www.amazon.ca/gp/product/B001E1Y5O6) |
+| **Adhesive Rubber** | 2mm, non-slip | 1 sheet | [Amazon](https://www.amazon.ca/gp/product/B00P5VQ7HE) |
+
+### V2 Hardware (Universal Mount)
+
+| Component | Specification | Quantity | Notes |
+|-----------|--------------|----------|-------|
+| **Wood Screws** | #8, black oxide | 4 | General purpose |
+| **Bolt** | 5/16" x 1.5-2" | 1 | For HEX shaft option |
+| **Nuts** | 5/16" | 2 | For HEX shaft |
+| **Lock Washers** | 5/16" | 2 | For HEX shaft |
+
+## Shifter Components (All Versions)
+
+Shifters are optional but highly recommended for manual resistance adjustment.
+
+| Component | Specification | Quantity | Notes |
+|-----------|--------------|----------|-------|
+| **Microswitches** | 6x6mm momentary | 2 | SPST-NO |
+| **RCA to 3.5mm Cable** | Stereo, 3-6ft | 1 | For connection |
+| **TPU Filament** | 95A durometer | ~50g | For printing strap |
+| **Hot Glue** | Standard | As needed | Assembly |
+
+**Recommended Hardware:** See [Wiki](https://github.com/doudar/SmartSpin2k/wiki/Recommended-Hardware)
+
+## 3D Printing Materials
+
+### Filament Requirements
+
+<Tabs>
+  <Tab title="Case Parts">
+    | Material | Color | Estimated Weight | Notes |
+    |----------|-------|------------------|-------|
+    | **PLA** | Any | 200-300g | Easiest to print |
+    | **PETG** | Any | 200-300g | More durable |
+    | **ABS** | Any | 200-300g | Heat resistant |
+  </Tab>
+  
+  <Tab title="Gears">
+    | Material | Color | Estimated Weight | Notes |
+    |----------|-------|------------------|-------|
+    | **PLA** | Any | 50-80g | Print at 100% infill |
+    | **PETG** | Any | 50-80g | More wear resistant |
+  </Tab>
+  
+  <Tab title="Mounts & Arms">
+    | Material | Color | Estimated Weight | Notes |
+    |----------|-------|------------------|-------|
+    | **PLA** | Any | 100-150g | Good strength |
+    | **PETG** | Any | 100-150g | Best for load-bearing |
+    | **ABS** | Any | 100-150g | High strength |
+  </Tab>
+  
+  <Tab title="Shifters">
+    | Material | Color | Estimated Weight | Notes |
+    |----------|-------|------------------|-------|
+    | **TPU** | Any | 30-50g | Must be flexible |
+    | **95A Durometer** | - | - | Recommended hardness |
+  </Tab>
+</Tabs>
+
+### Total Filament Estimate
+
+- **Complete V3 Build:** ~400-500g rigid + 50g TPU
+- **Complete V2 Direct Mount:** ~450-550g rigid + 50g TPU
+- **Complete V2 Universal:** ~350-400g rigid + 50g TPU
+
+## Sourcing Recommendations
+
+### Electronics Suppliers
+
+<Accordion title="United States">
+  - **Amazon** - Fast shipping, ESP32 devkits, stepper motors
+  - **DigiKey** - Professional components, exact specs
+  - **Mouser** - Alternative to DigiKey
+  - **AliExpress** - Budget components (longer shipping)
+  - **Adafruit** - Quality devkits and drivers
+  - **SparkFun** - Educational-grade components
+</Accordion>
+
+<Accordion title="Europe">
+  - **RS Components** - Professional supplier
+  - **Farnell** - Wide component selection
+  - **AliExpress** - Budget option
+  - **Amazon (local)** - Fast delivery
+  - **TME** - Eastern Europe specialist
+</Accordion>
+
+<Accordion title="Asia Pacific">
+  - **AliExpress** - Best prices, local shipping
+  - **Taobao** - China domestic
+  - **Element14** - Professional components
+  - **RS Components** - Australia/NZ
+</Accordion>
+
+### PCB Manufacturing
+
+<Tabs>
+  <Tab title="V3 PCB">
+    **Pre-assembled (Recommended):**
+    - [SmartSpin2k.com Kits](https://www.smartspin2k.com/purchase-kits)
+    
+    **DIY Manufacturing:**
+    - **JLCPCB** - SMT assembly service
+    - **PCBWay** - Alternative SMT service
+    - **Seeed Studio** - Fusion PCB service
+    
+    <Warning>
+      V3 requires SMT assembly. Upload BOM and CPL files carefully.
+    </Warning>
+  </Tab>
+  
+  <Tab title="V2 PCB">
+    **Direct Order:**
+    - [PCBWay Project Link](https://www.pcbway.com/project/shareproject/SmartSpin2k_PCB.html)
+    
+    **Custom Order:**
+    - Upload Gerber files from Hardware/V2/PCB/
+    - Any PCB manufacturer (JLCPCB, OSH Park, etc.)
+    - Specifications: 1.6mm, HASL finish
+  </Tab>
+</Tabs>
+
+### 3D Printing Materials
+
+- **Hatchbox** - Reliable PLA and PETG
+- **eSUN** - Good PLA and TPU options
+- **Prusament** - Premium quality
+- **Overture** - Budget friendly
+- **NinjaFlex** - Premium TPU for shifters
+
+### Hardware (Screws, Inserts)
+
+- **Heat-set Inserts:** [AliExpress M3x5x4mm](https://www.aliexpress.com/item/4000232858343.html)
+- **Screws/Nuts:** Local hardware store or Amazon
+- **Velcro Straps:** [Amazon Cable Ties](https://www.amazon.ca/gp/product/B001E1Y5O6)
+- **Non-slip Rubber:** [Amazon Rubber Pads](https://www.amazon.ca/gp/product/B00P5VQ7HE)
+
+## Cost Estimates
+
+<Note>
+  Prices are approximate and vary by region and supplier. Check current prices before ordering.
+</Note>
+
+### V3 Integrated PCB
+
+| Category | Cost (USD) | Notes |
+|----------|-----------|-------|
+| **Pre-assembled PCB Kit** | $80-120 | From SmartSpin2k.com |
+| **Stepper Motor** | $15-25 | NEMA 17 |
+| **Power Supply** | $10-15 | 12V 2A |
+| **3D Printing Materials** | $15-30 | ~500g filament |
+| **Hardware (screws, etc.)** | $10-20 | Heat inserts, fasteners |
+| **Shifters (optional)** | $15-25 | Switches, cable, TPU |
+| **Total (with kit)** | **$145-235** | |
+| **Total (DIY PCB)** | **$180-280** | If manufacturing PCB yourself |
+
+### V2 Through Hole
+
+| Category | Cost (USD) | Notes |
+|----------|-----------|-------|
+| **PCB (bare board)** | $5-15 | From PCBWay or DIY |
+| **ESP32 DevKit** | $8-15 | |
+| **TMC2209 Driver** | $10-18 | |
+| **Stepper Motor** | $15-25 | NEMA 17 |
+| **Electronic Components** | $15-25 | Resistors, caps, etc. |
+| **Power Supply** | $10-15 | 12V 2A |
+| **3D Printing Materials** | $15-30 | ~500g filament |
+| **Hardware** | $10-20 | Screws, inserts |
+| **Shifters (optional)** | $15-25 | |
+| **Total** | **$103-188** | |
+
+### V1 Archive
+
+Not recommended for new builds. Use V2 or V3 instead.
+
+## Next Steps
+
+1. **Choose your version** - [Hardware Overview](/hardware/overview)
+2. **Check bike compatibility** - [Bike Compatibility](/hardware/bike-compatibility)
+3. **Review 3D printing needs** - [3D Printing Guide](/hardware/3d-printing)
+4. **Order components** - Use sourcing links above
+5. **Start building!** - Follow GitHub wiki instructions
+
+## Community Resources
+
+- [Facebook Group](https://www.facebook.com/groups/716297469953492/) - Ask about sourcing
+- [GitHub Wiki](https://github.com/doudar/SmartSpin2k/wiki) - Build guides
+- [Recommended Hardware List](https://github.com/doudar/SmartSpin2k/wiki/Recommended-Hardware) - Community vetted parts

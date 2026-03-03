@@ -1,0 +1,404 @@
+---
+title: Mounting Guide
+description: Instructions for mounting SmartSpin2k to your bike frame
+---
+
+Proper mounting is critical for SmartSpin2k performance. A secure, rigid mount ensures accurate resistance control and prevents slippage during intense workouts.
+
+## Mounting System Overview
+
+The SmartSpin2k mounting system consists of three main components:
+
+1. **Bike Mount**: Attaches to your bike's head tube
+2. **Arm**: Connects the bike mount to the SmartSpin2k case (length varies by bike)
+3. **Case Assembly**: Contains electronics and gearbox, connects to resistance knob
+
+This modular design accommodates various bike geometries with minimal modification.
+
+## Pre-Installation Measurements
+
+<Steps>
+  <Step title="Measure knob-to-head tube distance">
+    Measure from the back of the head tube (side closest to you) to the center of the resistance knob.
+    
+    This measurement determines the required arm length:
+    - Measured distance minus 65mm = approximate arm length needed
+    - Example: 145mm measured - 65mm = 80mm arm
+  </Step>
+
+  <Step title="Check clearance requirements">
+    Verify minimum clearances for your case type:
+    
+    **Direct Mount Long Case**:
+    - Minimum 115mm knob-to-head tube clearance
+    - Suitable for: Bowflex C6, Peloton Bike, Echelon Connect Sport
+    - Uses arm length typically 65-105mm
+    
+    **Direct Mount Short Case**:
+    - Minimum 81mm clearance
+    - Suitable for: Bowflex C7
+    - Uses shorter arms (45-65mm)
+    
+    **Universal Mount**:
+    - Minimum 49mm clearance
+    - More portable, less rigid
+    
+    **Ultra Short Mod**:
+    - For bikes with less than 49mm clearance
+    - Requires modified case design
+  </Step>
+
+  <Step title="Identify your bike's head tube profile">
+    - Measure head tube width and shape (round, square, oval)
+    - Check if existing bike mounts are available in Hardware/Common Assets/Bike Mount/
+    - If not available, you may need to customize using the OpenSCAD model
+  </Step>
+</Steps>
+
+## Arm Length Selection
+
+Refer to the table below for recommended arm lengths by bike model. These values are based on community testing:
+
+| Manufacturer | Model | Year | Arm Length (mm) | Notes |
+|--------------|-------|------|-----------------|-------|
+| BH Fitness | - | Any | 50 | - |
+| Body Bike | Body Bike | Any | 50 | Steep angle |
+| BodyCraft | MAG | Any | 35 | - |
+| Bowflex | C6 | Any | 65 or 85 | Two mounting positions |
+| Bowflex | C7 | Any | 45 | Short case required |
+| Bowflex | IC Bike SE | Any | 100 | - |
+| Bowflex | Velocore | Any | 150 | - |
+| Dmasun | Any | Any | 55 | - |
+| Echelon | Connect Sport | Any | 105 | - |
+| HMC | HMC | Any | 60 | - |
+| JLL | IC400 | Any | 35-45 | - |
+| Joroto | X2 | Any | 20 | - |
+| LeMond | RevMaster | Any | 75 | - |
+| Life Fitness | ICG 8 | Any | 35-60 | - |
+| Merach | Any | Any | 70 | - |
+| Peloton | Bike | Any | 75 (90 if bars slammed) | - |
+| PooBoo | Various | Any | 50-80 | Model dependent |
+| PooBoo | 616M2 | Any | 50 | - |
+| Schwinn | IC4 | Any | 85 | - |
+| Schwinn | AC | Any | 20-40 | Mount above SS2k |
+| Spinning | L7 | Any | 20-40 | Mount above SS2k |
+| SOLE | SB700 | Any | 20-40 | - |
+| Soulcycle | Equinox | Any | 155-165 | - |
+| Stryde | Any | Any | 110-120 | - |
+| Sunny | B1805 | Any | 35 | - |
+| Vortec | Vortec | Any | 20 | - |
+| York | SB300 | Any | 20-40 | - |
+| Yosuda | Pro | Any | 20-40 | Mount above SS2k |
+| Yosuda | L-007C | Any | 20-40 | Mount above SS2k |
+| Yesoul | S3 | Any | 140 (145-150 may be better) | - |
+
+Reference: `Hardware/Common Assets/Arm/readme.md`
+
+<Note>
+If your exact bike model isn't listed, use the measurement method: (knob-to-head tube distance) - 65mm = arm length.
+</Note>
+
+## Custom Arm Creation
+
+If no pre-made arm fits your bike, customize one using the Thingiverse customizer:
+
+https://www.thingiverse.com/thing:5732525
+
+Adjust the arm length parameter to match your measured value.
+
+## Bike Mount Selection
+
+### Available Pre-Made Mounts
+
+Check `Hardware/Common Assets/Bike Mount/` for existing mounts. Common designs include:
+
+- **IC4/Square Profile**: Works with most square head tubes (Schwinn IC4, Bowflex C6)
+- **Peloton**: Specific to Peloton bike head tube geometry
+- **Echelon**: Designed for Echelon Connect Sport
+- **Generic Round**: For round head tube profiles
+
+### Custom Mount Creation
+
+For bikes without existing mounts, use the OpenSCAD customizer:
+
+https://www.thingiverse.com/thing:5738735
+
+**Key Parameters**:
+- **YokeWidth**: Width of head tube (measure with calipers)
+- **YokeLength**: May need adjustment for specific bike geometry
+
+#### Yoke Width Reference
+
+| Manufacturer | Model | Year | Yoke Width (mm) |
+|--------------|-------|------|-----------------|
+| Yosuda | Bike Plus | Any | 30 |
+
+Add measurements for your bike and share with the community!
+
+## Installation Process
+
+### Installing the Bike Mount
+
+<Steps>
+  <Step title="Choose mounting method">
+    Select your preferred mounting approach:
+    
+    **Option A: VHB Tape (Semi-Permanent)**
+    - Clean head tube surface thoroughly
+    - Apply VHB tape to bike mount contact surfaces
+    - Press firmly and allow 24 hours to cure
+    - Provides excellent strength without paint damage risk
+    
+    **Option B: Velcro Strap (Removable)**
+    - Apply 2mm non-slip adhesive rubber to mount contact points
+    - Position mount on head tube
+    - Secure with 1/2" wide velcro cable tie (8" length for most bikes)
+    - Protects paint finish, allows removal between rides
+    - Tighten securely to prevent movement
+  </Step>
+
+  <Step title="Position bike mount">
+    - Place mount on head tube at measured position
+    - Ensure mount is level and properly aligned
+    - Verify clearance for arm movement
+    - Mark position before final attachment
+  </Step>
+
+  <Step title="Secure bike mount">
+    - Apply chosen mounting method (VHB or strap)
+    - Verify mount is solidly attached with no movement
+    - Allow cure time if using adhesive
+    - Test with moderate force before proceeding
+  </Step>
+</Steps>
+
+<Warning>
+A loose bike mount will cause erratic resistance control and may damage your bike's knob. Ensure the mount is completely secure before continuing.
+</Warning>
+
+### Installing the Arm
+
+<Steps>
+  <Step title="Attach arm to bike mount">
+    - Use 1x M5x30mm screw through bike mount into arm
+    - Add M5 nut and tighten securely
+    - Arm should pivot freely but without excessive play
+  </Step>
+
+  <Step title="Attach arm to case">
+    - Position arm hook on case mount point
+    - Use 1x M5x12mm screw through arm into case
+    - Add M5 nut and tighten
+    - Verify arm angle allows knob engagement
+  </Step>
+
+  <Step title="Test arm movement">
+    - Arm should rotate smoothly on both pivot points
+    - No binding or excessive resistance
+    - Sufficient range of motion for all resistance settings
+  </Step>
+</Steps>
+
+### Installing the Knob Cup and Insert
+
+<Steps>
+  <Step title="Select correct insert">
+    Choose the insert from `Hardware/Common Assets/Inserts/` that matches your bike:
+    - Peloton
+    - Echelon
+    - Bowflex/Schwinn
+    - Generic spherical
+    - Generic cylindrical
+    - Many other bike-specific designs available
+  </Step>
+
+  <Step title="Install insert into knob cup">
+    - Press insert firmly into knob cup
+    - Ensure insert is fully seated
+    - Test fit on bike's resistance knob
+    - Insert should grip knob firmly without slipping
+  </Step>
+
+  <Step title="Attach knob cup to gearbox">
+    - Align knob cup shaft with internal gearbox
+    - If using 40T HEX gear, insert 5/16" bolt through shaft
+    - Secure with appropriate hardware
+    - Ensure no wobble or play in connection
+  </Step>
+
+  <Step title="Mount to bike knob">
+    - Position SmartSpin2k case near resistance knob
+    - Slide knob cup insert onto bike knob
+    - Ensure firm engagement with no slippage
+    - Rotate knob by hand to verify smooth operation
+  </Step>
+</Steps>
+
+<Warning>
+If the insert slips on the knob during operation, resistance control will be inaccurate. You may need a different insert design or modifications for your specific knob shape.
+</Warning>
+
+### Final Case Mounting
+
+<Steps>
+  <Step title="Position case assembly">
+    - With knob cup attached to bike knob, position case
+    - Connect arm to case mount point
+    - Use 1x M5x30mm screw through case mount
+    - Add M5 nut and tighten securely
+  </Step>
+
+  <Step title="Verify alignment">
+    - Check that all connections are tight
+    - Ensure case doesn't interfere with pedals or frame
+    - Verify cables have sufficient slack for movement
+    - Test full range of motion manually
+  </Step>
+
+  <Step title="Test installation">
+    - Manually rotate resistance knob through full range
+    - Listen for unusual noises (grinding, clicking)
+    - Check for any binding or resistance
+    - Verify all mounting hardware is secure
+  </Step>
+</Steps>
+
+## Installation Verification
+
+<Steps>
+  <Step title="Mechanical inspection">
+    - All M5 screws properly tightened
+    - No wobble in any connection points
+    - Knob cup grips resistance knob firmly
+    - Gears mesh properly with minimal backlash
+    - Case clears all bike frame components
+  </Step>
+
+  <Step title="Range of motion test">
+    - Manually turn resistance from minimum to maximum
+    - SmartSpin2k should track smoothly throughout
+    - No binding at any point in range
+    - Knob returns to set position when released
+  </Step>
+
+  <Step title="Powered test">
+    - Connect power to SmartSpin2k
+    - Use shifter buttons to adjust resistance
+    - Verify stepper motor moves knob accurately
+    - Check for any unusual vibration or noise
+    - Confirm resistance changes match commands
+  </Step>
+</Steps>
+
+## Mounting Troubleshooting
+
+### Knob slippage
+
+**Symptoms**: Resistance doesn't change when stepper moves, or changes inconsistently.
+
+**Solutions**:
+- Try a different insert design for your knob shape
+- Add friction material (rubber, silicone) to insert contact points
+- Verify knob cup is fully engaged with knob
+- Check for worn or damaged insert
+
+### Excessive vibration
+
+**Symptoms**: Rattling or shaking during resistance changes or pedaling.
+
+**Solutions**:
+- Tighten all mounting hardware (M5 screws, M3 case screws)
+- Verify bike mount is solidly attached to head tube
+- Check gear mesh - should be snug but not binding
+- Add dampening material between case and mount
+
+### Limited range of motion
+
+**Symptoms**: Cannot reach full resistance range, or hits mechanical stops prematurely.
+
+**Solutions**:
+- Verify correct arm length for your bike
+- Check arm angles at both extremes of travel
+- Ensure case doesn't interfere with frame at any position
+- May need longer or shorter arm depending on geometry
+
+### Case interference with frame
+
+**Symptoms**: Case touches frame, handlebars, or other bike components.
+
+**Solutions**:
+- Adjust arm length (may need shorter or longer)
+- Rotate bike mount on head tube for better clearance
+- Use different case variant (short case, ultra-short mod)
+- Verify bike compatibility - some geometries may not work
+
+## Bike-Specific Mounting Notes
+
+### Peloton Bike
+
+- Use 75mm arm (90mm if handlebars are slammed)
+- V3 PCB recommended for serial communication
+- Connect auxiliary serial for direct resistance reading
+- Peloton-specific insert available in Common Assets
+
+### Bowflex C6 / Schwinn IC4
+
+- Use 85mm arm
+- IC4 bike mount design works for both models
+- Square head tube profile
+- Velcro strap mounting recommended for paint protection
+
+### Echelon Connect Sport
+
+- Use 105mm arm
+- Echelon-specific bike mount available
+- May require arm adjustment based on setup
+
+### Bowflex C7
+
+- Use short case variant
+- 45mm arm length
+- Tight clearances - verify fit carefully
+- Limited space requires precise mounting
+
+## Maintenance and Adjustments
+
+### Periodic Checks
+
+Perform these checks every 30 days or 20 hours of use:
+
+- Tighten all mounting hardware (M5, M3 screws)
+- Inspect insert for wear or damage
+- Check gear mesh for proper engagement
+- Verify bike mount hasn't shifted
+- Test full range of motion
+
+### Re-tensioning
+
+If using velcro strap mounting:
+- Check strap tension monthly
+- Replace worn straps immediately
+- Verify anti-slip rubber pads are intact
+
+### Insert Replacement
+
+Replace the knob insert if:
+- Visible wear or cracking
+- Slippage occurs during use
+- Inconsistent resistance control
+- Print a replacement from STL files in Common Assets
+
+## Next Steps
+
+After successful mounting:
+
+1. Proceed to [Calibration](/building/calibration) for homing and setup
+2. Test all resistance ranges
+3. Configure power table for your bike
+
+## Resources
+
+- Arm selection: `Hardware/Common Assets/Arm/readme.md`
+- Bike mounts: `Hardware/Common Assets/Bike Mount/readme.md`
+- Inserts: `Hardware/Common Assets/Inserts/README.md`
+- Direct mount details: `Hardware/V2 - Through Hole/Direct Mount/readme.md`

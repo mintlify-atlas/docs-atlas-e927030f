@@ -1,0 +1,463 @@
+---
+title: 'Power Calibration'
+description: 'Calibrate SmartSpin2k power output for accurate training data'
+icon: 'sliders'
+---
+
+## Why Calibrate Power?
+
+Many spin bikes have inaccurate or non-existent power meters. SmartSpin2k offers two calibration methods:
+
+1. **Power Multiplier** - Scale readings from an existing power meter
+2. **Power Table** - Build a custom power curve for bikes without power meters
+
+Accurate power data is essential for:
+- Effective ERG mode training
+- Tracking fitness progress over time
+- Comparing workouts across different platforms
+- Setting appropriate FTP (Functional Threshold Power)
+
+## Method 1: Power Multiplier Calibration
+
+<Info>
+  Use this method if your bike has a built-in power meter that reads consistently high or low.
+</Info>
+
+### When to Use Power Multiplier
+
+- Your bike has a power meter but it's inaccurate (e.g., consistently 10% high)
+- You want to match power readings from a different bike or power meter
+- You've verified your power meter is offset by a consistent percentage
+
+### Calibration Process
+
+<Steps>
+  <Step title="Establish baseline">
+    Perform a controlled test ride and note the average power reported by your bike's power meter.
+    
+    Ideally, do a 20-minute FTP test or a steady 10-minute effort.
+  </Step>
+  
+  <Step title="Compare to known value">
+    If you have access to a calibrated power meter (from another bike or a power meter rental), perform the same test and compare.
+    
+    **Example**: 
+    - Your bike reports 250W average
+    - Calibrated meter reports 225W average
+    - Your bike reads 11% high (250/225 = 1.11)
+  </Step>
+  
+  <Step title="Calculate correction factor">
+    Correction Factor = Actual Power ÷ Reported Power
+    
+    Using the example above:
+    - Correction Factor = 225 ÷ 250 = **0.90**
+  </Step>
+  
+  <Step title="Apply in SmartSpin2k">
+    Navigate to: **Web Interface > Settings > Power Multiplier**
+    
+    Set the slider to your calculated correction factor (0.90 in this example).
+    
+    Range: 0.10x to 2.10x (default: 1.00x)
+  </Step>
+  
+  <Step title="Verify calibration">
+    Perform another test ride and confirm the power readings match your expectations.
+  </Step>
+</Steps>
+
+### Power Multiplier Settings
+
+Access via: **Web Interface > Settings**
+
+```javascript
+// From settings.html:87-94
+powerCorrectionFactor: {
+  type: 'slider',
+  title: 'Power Multiplier',
+  tooltip: 'Power Meter Correction Factor',
+  tooltipText: 'Adjust this to calibrate the output of your power meter.',
+  min: 0.10, max: 2.10, step: 0.01,
+  defaultValue: 1.00,
+  unit: 'x'
+}
+```
+
+<Tip>
+  Changes to the Power Multiplier take effect immediately. You don't need to restart SmartSpin2k.
+</Tip>
+
+## Method 2: Power Table Calibration
+
+<Info>
+  Use this method if your bike doesn't have a power meter or you want to simulate power based on resistance and cadence.
+</Info>
+
+### How the Power Table Works
+
+SmartSpin2k builds a lookup table that maps:
+
+```
+(Resistance Position, Cadence) → Estimated Power
+```
+
+As you ride at different resistance levels and cadences, SmartSpin2k records:
+- **Stepper position** (resistance level)
+- **Cadence** (RPM from sensor or power meter)
+- **Power** (from connected power meter or user input)
+
+Over time, this creates a comprehensive power curve for your specific bike.
+
+### Building Your Power Table
+
+<Steps>
+  <Step title="Connect a power meter (recommended)">
+    For best results, temporarily connect a power meter to SmartSpin2k while building the table.
+    
+    If you don't have a power meter, you can manually input expected power values or use rough estimates.
+  </Step>
+  
+  <Step title="Disable PowerTable For Power">
+    **Important**: Initially, keep "PowerTable For Power" **OFF** in Settings.
+    
+    This allows SmartSpin2k to use your connected power meter to build the table.
+    
+    Settings > PowerTable For Power > OFF
+  </Step>
+  
+  <Step title="Ride at various intensities">
+    Perform rides that cover a wide range of:
+    
+    **Cadence ranges**:
+    - Low: 40-60 RPM
+    - Medium: 60-90 RPM
+    - High: 90-120 RPM
+    
+    **Power levels**:
+    - Easy: 50-100W
+    - Moderate: 100-200W
+    - Hard: 200-300W
+    - Very Hard: 300W+
+    
+    Spend at least 30-60 seconds at each combination.
+  </Step>
+  
+  <Step title="Let the table populate">
+    SmartSpin2k automatically records data points as you ride.
+    
+    The power table is saved every 10 seconds to `/PowerTable.txt` on the device.
+  </Step>
+  
+  <Step title="Verify coverage">
+    After 3-5 rides, you should have good coverage across the range of cadence and resistance you typically use.
+  </Step>
+  
+  <Step title="Enable PowerTable For Power (optional)">
+    Once you have a well-populated table, you can enable "PowerTable For Power" in Settings.
+    
+    This makes SmartSpin2k use the power table instead of a connected power meter.
+    
+    <Warning>
+      Only enable this if you don't have a power meter connected, or if you want to use the table instead of your power meter.
+    </Warning>
+  </Step>
+</Steps>
+
+### Power Table Data Structure
+
+The power table uses the following resolution:
+
+```cpp
+// From Power_Table.h
+#define POWERTABLE_CAD_INCREMENT 5   // 5 RPM bins
+#define POWERTABLE_WATT_INCREMENT 5  // 5 Watt bins
+```
+
+**Cadence bins**: 40, 45, 50, 55, ... 120 RPM
+**Power bins**: 0, 5, 10, 15, ... 2000W
+
+For each `(cadence, power)` pair, the table stores the corresponding **stepper position**.
+
+### Example Power Table Session
+
+<CodeGroup>
+```text Sample Ride Data
+Time  | Cadence | Stepper Pos | Power | Action
+------|---------|-------------|-------|------------------
+00:00 | 80 RPM  | 1000        | 150W  | Recorded to table
+01:00 | 80 RPM  | 1500        | 200W  | Recorded to table
+02:00 | 90 RPM  | 1500        | 220W  | Recorded to table
+03:00 | 70 RPM  | 1500        | 180W  | Recorded to table
+04:00 | 85 RPM  | 2000        | 280W  | Recorded to table
+```
+</CodeGroup>
+
+After this ride, SmartSpin2k knows:
+- At 80 RPM, position 1000 = ~150W
+- At 80 RPM, position 1500 = ~200W
+- At 90 RPM, position 1500 = ~220W
+- etc.
+
+### Using the Power Table in ERG Mode
+
+When ERG mode receives a target power command:
+
+1. **Lookup**: SmartSpin2k queries the table for the stepper position needed to achieve the target power at the current cadence
+2. **Move**: The stepper motor moves to that position
+3. **Refine**: PID control makes small adjustments to hit the exact target
+
+This allows for quick, accurate jumps to new power targets during interval training.
+
+## Resetting the Power Table
+
+You may need to reset the power table if:
+- Your bike's resistance mechanism has been serviced or modified
+- You've replaced brake pads or adjusted tension
+- The power table produces inaccurate estimates
+- You want to start fresh with new calibration data
+
+<Steps>
+  <Step title="Access developer tools">
+    Navigate to: **Web Interface > Developer Tools**
+  </Step>
+  
+  <Step title="Reset power table">
+    Look for the "Reset Power Table" option.
+    
+    <Warning>
+      This will delete all recorded power table data. This action cannot be undone.
+    </Warning>
+  </Step>
+  
+  <Step title="Confirm reset">
+    Confirm the reset action.
+  </Step>
+  
+  <Step title="Rebuild the table">
+    Follow the "Building Your Power Table" steps above to repopulate with new data.
+  </Step>
+</Steps>
+
+Alternatively, reset via code:
+
+```cpp
+// From ERG_Mode.cpp:110-118
+if (ss2k->resetPowerTableFlag) {
+  LittleFS.remove(POWER_TABLE_FILENAME);
+  powerTable->reset();
+  userConfig->setHMin(INT32_MIN);
+  userConfig->setHMax(INT32_MIN);
+  spinBLEServer.spinDownFlag = 0;
+  rtConfig->setHomed(false);
+  userConfig->saveToLittleFS();
+}
+```
+
+## Minimum and Maximum Watts
+
+SmartSpin2k allows you to set minimum and maximum watt thresholds to protect your bike and ensure realistic power readings.
+
+### Min Brake Watts
+
+**Settings > Min Brake Watts** (Default: 0W, Range: 0-200W)
+
+Sets the minimum power output before SmartSpin2k stops adjusting resistance.
+
+- **Use case**: If your bike always produces at least 20W of resistance at the lowest setting, set this to 20W
+- **0W = disabled**: No minimum power check
+
+```cpp
+// From ERG_Mode.cpp:163-166
+// Set minimum set point to minimum bike watts
+if (rtConfig->watts.getTarget() < userConfig->getMinWatts()) {
+  SS2K_LOG(ERG_MODE_LOG_TAG, "ERG Target Below Minimum Value.");
+  rtConfig->watts.setTarget(userConfig->getMinWatts());
+}
+```
+
+### Max Brake Watts
+
+**Settings > Max Brake Watts** (Default: 0W, Range: 0-2000W)
+
+Sets the maximum expected power output from your bike.
+
+- **Use case**: If your bike maxes out at 500W, set this to 500W to flag unrealistic power readings
+- **0W = disabled**: No maximum power check
+
+<Tip>
+  Set Max Brake Watts to the highest power you've ever produced on your bike during a sprint or max effort.
+</Tip>
+
+## Spin Down Calibration
+
+Some training apps (like Zwift) support spin-down calibration, similar to wheel-on trainers.
+
+### How Spin Down Works
+
+1. **App initiates**: The training app sends a `SpinDownControl` command via FTMS
+2. **User accelerates**: You pedal up to a target speed (typically 8-24 km/h)
+3. **Coast down**: Stop pedaling and let the bike coast to a stop
+4. **Measure**: The app measures deceleration to estimate resistance
+
+<Note>
+  SmartSpin2k acknowledges spin-down commands but does not actively use the data for calibration, since it directly controls resistance via the stepper motor.
+</Note>
+
+### Performing a Spin Down in Zwift
+
+<Steps>
+  <Step title="Open pairing screen">
+    In Zwift, go to the device pairing screen.
+  </Step>
+  
+  <Step title="Select controllable trainer">
+    Ensure SmartSpin2k is paired as your controllable trainer.
+  </Step>
+  
+  <Step title="Click settings icon">
+    Click the gear icon next to SmartSpin2k.
+  </Step>
+  
+  <Step title="Choose 'Spindown'">
+    Select the spindown option.
+  </Step>
+  
+  <Step title="Follow instructions">
+    Pedal up to the target speed, then coast.
+  </Step>
+  
+  <Step title="Complete calibration">
+    Zwift will confirm the spindown is complete.
+  </Step>
+</Steps>
+
+```cpp
+// From BLE_Fitness_Machine_Service.cpp:303-321
+case FitnessMachineControlPointProcedure::SpinDownControl: {
+  // Response: Target speeds 8.00 km/h and 24.00 km/h
+  uint8_t responseParams[] = {0x20, 0x03, 0x60, 0x09};
+  
+  returnValue = {ResponseCode, SpinDownControl, Success};
+  returnValue.insert(returnValue.end(), 
+                     std::begin(responseParams), 
+                     std::end(responseParams));
+  
+  spinBLEServer.spinDownFlag = 2;
+}
+```
+
+## Comparing Calibration Methods
+
+<CardGroup cols={2}>
+  <Card title="Power Multiplier" icon="calculator">
+    **Best for**:
+    - Bikes with existing power meters
+    - Quick adjustments
+    - Consistent percentage offset
+    
+    **Pros**:
+    - Easy to set up
+    - Instant results
+    - No data collection needed
+    
+    **Cons**:
+    - Requires existing power meter
+    - Assumes linear scaling
+  </Card>
+  
+  <Card title="Power Table" icon="table">
+    **Best for**:
+    - Bikes without power meters
+    - Non-linear power curves
+    - Long-term accuracy
+    
+    **Pros**:
+    - Works without power meter
+    - Accounts for bike-specific characteristics
+    - Improves over time
+    
+    **Cons**:
+    - Requires initial data collection
+    - Takes multiple rides to populate
+    - Less accurate than real power meter
+  </Card>
+</CardGroup>
+
+## Validating Your Calibration
+
+<AccordionGroup>
+  <Accordion title="FTP Test Comparison">
+    Perform an FTP test (20-minute all-out effort) before and after calibration.
+    
+    Your FTP should be consistent with your perceived effort and heart rate.
+    
+    Typical FTP values:
+    - Beginner: 1.5-2.0 W/kg
+    - Intermediate: 2.5-3.5 W/kg
+    - Advanced: 3.5-4.5 W/kg
+    - Elite: 4.5+ W/kg
+  </Accordion>
+  
+  <Accordion title="Perceived Effort Check">
+    At calibrated power levels:
+    - 100W should feel very easy (conversational pace)
+    - 200W should feel moderate (can talk in short sentences)
+    - 300W should feel hard (difficult to talk)
+    - 400W+ should feel very hard (max effort)
+  </Accordion>
+  
+  <Accordion title="Heart Rate Correlation">
+    If you use a heart rate monitor, check that power and HR correlate:
+    
+    - Low power (50-100W) → Low HR (Zone 1-2)
+    - Moderate power (150-250W) → Moderate HR (Zone 3-4)
+    - High power (300W+) → High HR (Zone 5)
+  </Accordion>
+  
+  <Accordion title="Consistency Test">
+    Ride the same workout multiple times and verify:
+    - Average power is consistent (±5%)
+    - Heart rate response is similar
+    - RPE (Rate of Perceived Exertion) matches
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting Calibration Issues
+
+### Power reads too high
+
+- **Decrease Power Multiplier**: Try 0.90x or 0.85x
+- **Check power meter placement**: Ensure it's installed correctly
+- **Verify cadence sensor**: Inaccurate cadence can affect power calculations
+
+### Power reads too low
+
+- **Increase Power Multiplier**: Try 1.10x or 1.15x
+- **Recalibrate power meter**: Some power meters require zero-offset calibration
+- **Rebuild power table**: Collect more high-power data points
+
+### Inconsistent power readings
+
+- **Check for loose components**: Tighten crank arms, pedals, and power meter
+- **Replace power meter battery**: Low battery can cause erratic readings
+- **Improve power table coverage**: Ride at more varied intensities
+- **Reduce ERG Sensitivity**: High sensitivity can cause oscillations
+
+### Power table not improving
+
+- **Verify data is being saved**: Check `/PowerTable.txt` exists on device
+- **Ensure power meter is connected**: Table needs power input to build
+- **Ride at different resistance levels**: Cover full range of stepper positions
+- **Reset and rebuild**: If table is corrupted, start fresh
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="ERG Mode" icon="gauge" href="/usage/erg-mode">
+    Use calibrated power for ERG mode training
+  </Card>
+  <Card title="Web Interface" icon="browser" href="/usage/web-interface">
+    Access calibration settings via the web interface
+  </Card>
+</CardGroup>

@@ -1,0 +1,493 @@
+---
+title: OTA Updates
+description: Over-the-air firmware and filesystem updates for SmartSpin2k
+---
+
+## Overview
+
+SmartSpin2k supports two methods of over-the-air (OTA) updates:
+
+1. **HTTP OTA**: Automatic updates from GitHub repository
+2. **BLE OTA**: Manual updates via Bluetooth from companion app
+
+Both methods use ESP32's dual-partition OTA system for safe, recoverable updates.
+
+## HTTP OTA Updates
+
+### Automatic Updates
+
+By default, SmartSpin2k checks for updates on boot and can automatically update:
+
+```cpp
+// From settings.h:11
+#define AUTO_FIRMWARE_UPDATE true
+```
+
+<Steps>
+  <Step title="Configure Auto-Update">
+    In the web interface, ensure **Auto Update** is enabled in settings.
+    
+    When enabled, the device:
+    - Checks version on every boot
+    - Downloads firmware if newer version available
+    - Updates web interface files automatically
+    - Reboots to apply new firmware
+  </Step>
+
+  <Step title="Update Source">
+    Default update URL:
+    ```cpp
+    #define FW_UPDATEURL "https://raw.githubusercontent.com/doudar/OTAUpdates/main/"
+    #define FW_VERSIONFILE "version.txt"
+    #define FW_BINFILE "firmware.bin"
+    ```
+
+    Web files updated from:
+    ```cpp
+    #define DATA_UPDATEURL "https://raw.githubusercontent.com/doudar/SmartSpin2k/develop/data"
+    #define DATA_FILELIST "/list.json"
+    ```
+  </Step>
+
+  <Step title="Version Checking">
+    The firmware compares versions:
+    
+    ```cpp
+    Version availableVer(payload.c_str());
+    Version currentVer(FIRMWARE_VERSION);
+    
+    if ((availableVer > currentVer) && (userConfig->getAutoUpdate())) {
+      // Perform update
+    }
+    ```
+
+    Version format: `vX.Y.Z` (e.g., "v1.18.0")
+  </Step>
+
+  <Step title="Monitor Progress">
+    Watch the serial monitor during updates:
+    ```bash
+    esptool.py --port /dev/ttyUSB0 --baud 115200 monitor
+    ```
+    
+    You'll see:
+    - Version check results
+    - File download progress
+    - Filesystem update status
+    - Reboot confirmation
+  </Step>
+</Steps>
+
+### Update Process Flow
+
+<CodeGroup>
+```cpp Version Check
+// HTTP_Server_Basic.cpp:739-758
+void HTTP_Server::FirmwareUpdate() {
+  HTTPClient http;
+  WiFiClientSecure localClient;
+  localClient.setCACert(rootCACertificate);
+  
+  http.begin(userConfig->getFirmwareUpdateURL() + String(FW_VERSIONFILE),
+             rootCACertificate);
+  int httpCode = http.GET();
+  
+  if (httpCode == HTTP_CODE_OK) {
+    payload = http.getString();
+    payload.trim();
+    SS2K_LOG(HTTP_SERVER_LOG_TAG, "Server version: %s", payload.c_str());
+    httpServer.internetConnection = true;
+  }
+}
+```
+
+```cpp Filesystem Update  
+// HTTP_Server_Basic.cpp:772-830 (simplified)
+if (availableVer > currentVer) {
+  SS2K_LOG(HTTP_SERVER_LOG_TAG, "Updating FileSystem");
+  
+  // Download file list
+  http.begin(DATA_UPDATEURL DATA_FILELIST, rootCACertificate);
+  httpCode = http.GET();
+  
+  JsonDocument doc;
+  deserializeJson(doc, payload);
+  
+  // Download each file
+  for (JsonVariant v : files) {
+    String fileName = "/" + v.as<String>();
+    downloadFile(fileName);
+  }
+}
+```
+
+```cpp Firmware Flash
+// HTTP_Server_Basic.cpp:850-900 (simplified)
+if (Update.begin(UPDATE_SIZE_UNKNOWN)) {
+  size_t written = Update.writeStream(client);
+  
+  if (Update.end()) {
+    if (Update.isFinished()) {
+      SS2K_LOG(HTTP_SERVER_LOG_TAG, "Update successfully completed");
+      ss2k->rebootFlag = true;
+    }
+  }
+}
+```
+</CodeGroup>
+
+### Custom Update Server
+
+To use your own update server:
+
+<Steps>
+  <Step title="Prepare Server">
+    Host these files via HTTPS:
+    - `version.txt`: Current version string (e.g., "v1.18.0")
+    - `firmware.bin`: Compiled firmware binary
+    - `list.json`: Array of web interface filenames
+    - Individual web files (HTML, CSS, JS)
+  </Step>
+
+  <Step title="Get SSL Certificate">
+    Extract the root CA certificate from your server:
+    ```bash
+    openssl s_client -showcerts -connect yourserver.com:443
+    ```
+    
+    Add certificate to `include/cert.h`:
+    ```cpp
+    const char* rootCACertificate = 
+      "-----BEGIN CERTIFICATE-----\n"
+      "...your certificate...\n"
+      "-----END CERTIFICATE-----\n";
+    ```
+  </Step>
+
+  <Step title="Update URL">
+    Change the update URL in web interface settings or modify `settings.h`:
+    ```cpp
+    #define FW_UPDATEURL "https://yourserver.com/updates/"
+    ```
+  </Step>
+
+  <Step title="Rebuild & Flash">
+    Rebuild firmware with new URL and certificate, then flash to device.
+  </Step>
+</Steps>
+
+<Warning>
+The SSL certificate must be valid and match your server. The ESP32 validates certificates to prevent man-in-the-middle attacks.
+</Warning>
+
+## BLE OTA Updates
+
+Update firmware via Bluetooth using the SmartSpin2k companion app.
+
+### BLE OTA Process
+
+<Steps>
+  <Step title="Connect App">
+    Open the SmartSpin2k companion app (iOS/Android) and connect to your device via Bluetooth.
+  </Step>
+
+  <Step title="Select Firmware">
+    In the app, navigate to firmware update section and select the `.bin` file to upload.
+  </Step>
+
+  <Step title="Transfer Begins">
+    The app sends firmware in 512-byte chunks over BLE:
+    
+    ```cpp
+    // BLE_Firmware_Update.cpp:113-126
+    if (esp_ota_write(otaHandler, (uint8_t *)rxData.c_str(), 
+                      rxData.length()) != ESP_OK) {
+      SS2K_LOG(BLE_OTA_LOG_TAG, "Error: write to flash failed");
+      downloadFlag = false;
+      pTxCharacteristic->notify(0x04, 1);
+    } else {
+      // Notify iOS app that next batch can be sent  
+      pTxCharacteristic->notify(0x02, sizeof(uint8_t));
+    }
+    ```
+  </Step>
+
+  <Step title="Verification & Reboot">
+    When transfer completes:
+    - Firmware partition is validated
+    - Boot partition is switched
+    - Device automatically reboots
+    
+    ```cpp
+    // BLE_Firmware_Update.cpp:152-157
+    if (ESP_OK == esp_ota_set_boot_partition(update_partition)) {
+      esp_ota_end(otaHandler);
+      downloadFlag = false;
+      SS2K_LOG(BLE_OTA_LOG_TAG, "Restarting...");
+      ss2k->rebootFlag = true;
+    }
+    ```
+  </Step>
+</Steps>
+
+### BLE OTA Characteristics
+
+**Service UUID**: Defined in `BLE_Custom_Characteristic.h`
+
+| Characteristic | UUID | Properties | Purpose |
+|----------------|------|------------|----------|
+| TX | `FIRMWARE_CHARACTERISTIC_TX_UUID` | Read, Write, Notify | Status notifications |
+| OTA | `FIRMWARE_CHARACTERISTIC_OTA_UUID` | Write | Firmware data transfer |
+
+**Status Codes**:
+- `0x02`: Ready for next chunk
+- `0x04`: Error occurred
+- `0x05`: Upload complete, validating
+
+### BLE OTA Safety Features
+
+1. **Partition Validation**
+   ```cpp
+   // BLE_Firmware_Update.cpp:58-68
+   const esp_partition_t *configured = esp_ota_get_boot_partition();
+   const esp_partition_t *running = esp_ota_get_running_partition();
+   
+   if (configured != running) {
+     SS2K_LOG(BLE_OTA_LOG_TAG, "ERROR: Configured OTA boot partition...");
+     esp_ota_end(otaHandler);
+   }
+   ```
+
+2. **Watchdog Timer Extension**
+   ```cpp
+   // BLE_Firmware_Update.cpp:84-87  
+   esp_task_wdt_config_t wdt_config = {
+     .timeout_ms = 20000,  // 20 seconds for flash erase
+     .idle_core_mask = 0,
+     .trigger_panic = false
+   };
+   ```
+
+3. **Connection Interval Optimization**
+   ```cpp
+   // BLE_Firmware_Update.cpp:57
+   BLEDevice::getServer()->updateConnParams(
+     connInfo.getConnHandle(), 12, 12, 0, 1000);
+   ```
+
+## OTA Recovery System
+
+SmartSpin2k includes automatic recovery from failed updates.
+
+### Recovery Mechanism
+
+<Steps>
+  <Step title="Version Tracking">
+    Build version stored in LittleFS:
+    ```cpp
+    #define BUILD_VERSION_FILENAME "/build_version.txt"
+    ```
+    
+    Also stored in NVS (Non-Volatile Storage):
+    ```cpp
+    const char* OTA_REC_NS = "ota_recover";  // namespace
+    const char* OTA_REC_KEY = "ver";         // key
+    ```
+  </Step>
+
+  <Step title="Boot Check">
+    On boot, firmware compares stored version with current:
+    ```cpp
+    // HTTP_Server_Basic.cpp:111-131 (simplified)
+    String buildVer = readBuildVersion();
+    String recoveryVer = getRecoveryVersion();
+    
+    if (buildVer != FIRMWARE_VERSION && 
+        recoveryVer != FIRMWARE_VERSION) {
+      // Potential WiFi config corruption
+      WiFi.setHostname("reset");
+      SS2K_LOG(HTTP_SERVER_LOG_TAG, "OTA recovery");
+    }
+    ```
+  </Step>
+
+  <Step title="Hostname Reset">
+    Temporarily sets hostname to "reset" to clear potential WiFi issues after OTA.
+  </Step>
+
+  <Step title="Normal Operation">
+    Once confirmed working, recovery version is updated:
+    ```cpp
+    setRecoveryVersion(FIRMWARE_VERSION);
+    ```
+  </Step>
+</Steps>
+
+### Manual Recovery
+
+If OTA update fails and device won't boot:
+
+<Tabs>
+  <Tab title="Serial Recovery">
+    Reflash via USB using esptool:
+    ```bash
+    # Erase flash
+    esptool.py --port /dev/ttyUSB0 erase_flash
+    
+    # Flash known-good firmware  
+    esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 \
+      write_flash -z 0x10000 firmware.bin
+    ```
+  </Tab>
+  
+  <Tab title="Factory Reset">
+    Boot into factory partition (if available):
+    ```bash
+    esptool.py --port /dev/ttyUSB0 read_flash 0x8000 0x1000 partition.bin
+    # Edit partition table to boot factory
+    esptool.py --port /dev/ttyUSB0 write_flash 0x8000 partition.bin
+    ```
+  </Tab>
+  
+  <Tab title="Erase Config">
+    Erase only configuration, keep firmware:
+    ```cpp
+    // Via serial monitor after boot:
+    LittleFS.format();
+    ESP.restart();
+    ```
+  </Tab>
+</Tabs>
+
+## Update Best Practices
+
+<Warning>
+**Before updating:**
+- Ensure device is plugged into power (not battery)
+- Verify stable WiFi connection for HTTP OTA
+- Stay within BLE range during BLE OTA
+- Do not power off during update process
+</Warning>
+
+### Pre-Update Checklist
+
+- [ ] **Backup Power Table**: Download calibration data from web interface
+- [ ] **Note Current Settings**: Screenshot configuration pages
+- [ ] **Check Version**: Verify you're not downgrading unintentionally
+- [ ] **Stable Connection**: WiFi signal strong or BLE device nearby
+- [ ] **Monitor Serial**: Have serial monitor open to watch for errors
+
+### Post-Update Verification
+
+<Steps>
+  <Step title="Check Boot Messages">
+    Serial monitor should show:
+    - New firmware version
+    - Successful config load
+    - No partition errors
+  </Step>
+
+  <Step title="Verify Web Interface">
+    - Access web UI at device IP
+    - Check all settings retained
+    - Verify new features present
+  </Step>
+
+  <Step title="Test Functionality">
+    - BLE devices reconnect
+    - Stepper responds to commands
+    - Power table data intact
+    - ERG mode operates correctly
+  </Step>
+
+  <Step title="Save Recovery Point">
+    If everything works, recovery version auto-updates. If issues occur, perform manual recovery.
+  </Step>
+</Steps>
+
+## Disabling Auto-Update
+
+To disable automatic updates:
+
+**Via Web Interface**:
+- Settings → Auto Update → Disable
+
+**Via Code** (requires rebuild):
+```cpp
+// settings.h:11
+#define AUTO_FIRMWARE_UPDATE false
+```
+
+<Note>
+Even with auto-update disabled, you can still manually trigger updates via the web interface or BLE app.
+</Note>
+
+## Troubleshooting
+
+### Update Failed - HTTP
+
+**Check Internet Connection**:
+```cpp
+// Monitor logs for:
+"error downloading version.txt"
+"httpServer.internetConnection = false"
+```
+
+**Solutions**:
+- Verify WiFi connected (not in AP mode)
+- Check firewall allows HTTPS to GitHub
+- Confirm DNS resolution working
+- Verify SSL certificate valid
+
+### Update Failed - BLE
+
+**Connection Lost**:
+- Stay within 10 meters of device
+- Disable WiFi on phone to improve BLE performance
+- Close other Bluetooth apps
+
+**Transfer Errors**:
+```cpp
+// Watch for:
+"Error: write to flash failed"
+"OTA begin failed"
+```
+
+**Solutions**:
+- Restart device and retry
+- Ensure .bin file is valid firmware
+- Check device has sufficient flash space
+
+### Boot Loop After Update
+
+1. **Monitor Serial Output**: Identify crash reason
+2. **Enter Recovery Mode**: Use OTA recovery system
+3. **Manual Flash**: Reflash via USB if recovery fails
+4. **Report Issue**: File bug report with logs
+
+### Partition Errors
+
+```cpp
+"ERROR: Configured OTA boot partition at offset 0x..."
+```
+
+**Fix**:
+```bash
+# Erase entire flash and reflash
+esptool.py --port /dev/ttyUSB0 erase_flash
+esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 \
+  write_flash 0x1000 bootloader.bin \
+              0x8000 partitions.bin \
+              0x10000 firmware.bin
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Development" icon="code" href="/firmware/development">
+    Build custom firmware with your own features
+  </Card>
+  <Card title="Configuration" icon="gear" href="/firmware/configuration">
+    Optimize settings after firmware update
+  </Card>
+</CardGroup>

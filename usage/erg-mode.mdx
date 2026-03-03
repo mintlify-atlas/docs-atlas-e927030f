@@ -1,0 +1,397 @@
+---
+title: 'Using ERG Mode'
+description: 'Power-based training with automatic resistance control in ERG mode'
+icon: 'gauge'
+---
+
+## What is ERG Mode?
+
+ERG mode (Electronic Resistance Control) automatically adjusts your bike's resistance to maintain a target power output, regardless of your cadence or pedaling speed. This allows you to focus on your workout without constantly adjusting resistance manually.
+
+<Info>
+  ERG stands for "ergometer" - a device that measures work output. In ERG mode, SmartSpin2k acts as an ergometer by maintaining consistent power levels.
+</Info>
+
+## How ERG Mode Works
+
+When a training app (like Zwift or TrainerRoad) sends a target power command:
+
+1. **App sends target**: The app sends a power target (e.g., 200W) via the Fitness Machine Service Control Point
+2. **SmartSpin2k receives command**: Processes the `SetTargetPower` command from the app
+3. **Power adjustment**: SmartSpin2k adjusts the resistance knob to achieve the target power
+4. **Continuous monitoring**: Every ~1 second, the system checks actual power vs. target power
+5. **PID correction**: Makes small adjustments to maintain the target power output
+
+```cpp
+// From ERG_Mode.cpp:99
+// ERG mode is triggered when:
+if ((rtConfig->getFTMSMode() == SetTargetPower) && 
+    (hasConnectedPowerMeter || simulationRunning)) {
+  ergMode.computeErg();
+}
+```
+
+## Requirements for ERG Mode
+
+<CardGroup cols={2}>
+  <Card title="Power Meter" icon="bolt">
+    A Bluetooth power meter connected to SmartSpin2k
+    
+    **OR**
+    
+    Power simulation enabled with calibrated power table
+  </Card>
+  
+  <Card title="Minimum Cadence" icon="rotate">
+    Pedaling at minimum **40 RPM**
+    
+    ERG mode deactivates below this threshold
+  </Card>
+</CardGroup>
+
+### Power Sources
+
+<Tabs>
+  <Tab title="External Power Meter">
+    ### Connected Power Meter
+    
+    The most accurate method for ERG mode:
+    
+    <Steps>
+      <Step title="Connect power meter">
+        Use the SmartSpin2k web interface to scan for and connect your Bluetooth power meter.
+        
+        Navigate to: Web Interface > Bluetooth Scanner > Scan for Devices
+      </Step>
+      
+      <Step title="Verify connection">
+        Check the Status page to confirm the power meter is connected and reporting data.
+      </Step>
+      
+      <Step title="Power correction factor">
+        Optionally adjust the Power Multiplier in Settings if your power meter reads high or low.
+        
+        Settings > Power Multiplier (0.10x - 2.10x)
+      </Step>
+    </Steps>
+    
+    Supported power meter types:
+    - Cycling Power Service (CPS) devices
+    - Left-side, right-side, or dual-sided power meters
+    - Crank-based and pedal-based power meters
+  </Tab>
+  
+  <Tab title="Simulated Power">
+    ### Power Table Simulation
+    
+    If you don't have a power meter, SmartSpin2k can simulate power using a calibrated power table:
+    
+    <Steps>
+      <Step title="Enable power simulation">
+        In Settings, enable **PowerTable For Power**.
+        
+        <Warning>
+          This option should only be used if you don't have a power meter connected.
+        </Warning>
+      </Step>
+      
+      <Step title="Build power table">
+        Ride your bike at various resistance levels and cadences. SmartSpin2k will build a power table mapping resistance position + cadence to estimated power.
+        
+        See [Power Calibration](/usage/power-calibration) for detailed instructions.
+      </Step>
+      
+      <Step title="Calibrate over time">
+        The power table improves with more riding data. Aim to ride at different intensities to populate the table.
+      </Step>
+    </Steps>
+    
+    <Note>
+      Simulated power is less accurate than a real power meter but allows ERG mode functionality on bikes without power meters.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Using ERG Mode in Training Apps
+
+### TrainerRoad Workouts
+
+TrainerRoad is designed specifically for ERG mode training:
+
+<Steps>
+  <Step title="Select a workout">
+    Choose any structured workout from the TrainerRoad library.
+  </Step>
+  
+  <Step title="Start the workout">
+    TrainerRoad automatically sends target power commands to SmartSpin2k.
+  </Step>
+  
+  <Step title="Maintain steady cadence">
+    Keep your cadence consistent (typically 85-95 RPM). The resistance will adjust automatically.
+  </Step>
+  
+  <Step title="Focus on form">
+    Since power is controlled automatically, focus on pedaling technique and breathing.
+  </Step>
+</Steps>
+
+### Zwift Workouts
+
+Zwift supports ERG mode in structured workouts:
+
+<Steps>
+  <Step title="Select a workout">
+    Go to Training > Workouts and choose a structured training plan.
+  </Step>
+  
+  <Step title="Enable ERG mode">
+    In the ride screen, ensure ERG mode is enabled (look for the ERG icon in the bottom right).
+  </Step>
+  
+  <Step title="Ride the intervals">
+    Zwift will control resistance to match each interval's target power.
+  </Step>
+  
+  <Step title="Disable for races/free rides">
+    Toggle ERG mode off when doing free rides or races where you control effort manually.
+  </Step>
+</Steps>
+
+<Note>
+  In Zwift free rides and races, ERG mode is disabled. SmartSpin2k uses **Simulation Mode** instead, adjusting resistance based on virtual terrain gradient.
+</Note>
+
+## ERG Mode Behavior
+
+### Power Tracking Algorithm
+
+SmartSpin2k uses a PID (Proportional-Integral-Derivative) control loop to maintain target power:
+
+<CodeGroup>
+```cpp ERG_Mode.cpp (Simplified)
+// Calculate error between target and actual power
+int error = targetWatts - currentWatts;
+
+// Adjust proportional gain based on error magnitude
+if (abs(error) < 10) {
+  Kp = Kp * 0.25;  // Small corrections for minor errors
+} else if (abs(error) > 100) {
+  Kp = Kp * 1.25;  // Aggressive corrections for large errors
+}
+
+// Calculate adjustment
+double proportional = Kp * error;
+double PID_output = proportional;
+
+// Move stepper motor
+int newPosition = currentPosition + PID_output;
+```
+</CodeGroup>
+
+### Sensitivity Adjustment
+
+You can adjust how aggressively ERG mode responds to power errors:
+
+**Settings > ERG Sensitivity** (Default: 1.0)
+
+- **Low (0.1 - 0.5)**: Slow, gentle adjustments - better for bikes with sensitive resistance knobs
+- **Medium (0.5 - 1.5)**: Balanced response - good for most setups
+- **High (1.5 - 20)**: Aggressive corrections - use if ERG mode feels sluggish
+
+<Tip>
+  Start with the default sensitivity (1.0) and only adjust if ERG mode feels too aggressive or too slow to respond.
+</Tip>
+
+### Delay and Response Time
+
+ERG mode operates with the following timing:
+
+- **Update interval**: Every 1 second (`ERG_MODE_DELAY = 1000ms`)
+- **Power meter reading**: Averaged over the last 1-3 seconds
+- **Stepper movement delay**: Additional wait time when making large adjustments
+
+```cpp
+// From ERG_Mode.cpp:66
+ergTimer = millis() + ERG_MODE_DELAY;
+
+// When making large adjustments, add time for stepper to move
+long int timeToAdd = (stepDistance * 1000) / stepperSpeed * 2;
+ergTimer += timeToAdd;  // Wait for movement to complete
+```
+
+## ERG Mode States
+
+SmartSpin2k's ERG mode operates in three states:
+
+<AccordionGroup>
+  <Accordion title="INCREASING - Ramping up power" icon="arrow-up">
+    **Triggered when**: Target power > current power by more than 5W
+    
+    **Behavior**:
+    - Uses Power Table lookup to quickly jump to approximate resistance position
+    - Waits for power to stabilize
+    - Switches to MAINTAIN mode once target is reached
+    
+    **Example**: Going from 150W to 250W in a TrainerRoad interval
+  </Accordion>
+  
+  <Accordion title="DECREASING - Reducing power" icon="arrow-down">
+    **Triggered when**: Target power < current power by more than 5W
+    
+    **Behavior**:
+    - Uses Power Table lookup to quickly reduce resistance
+    - Waits for power to drop to target
+    - Switches to MAINTAIN mode once target is reached
+    
+    **Example**: Going from 250W to 150W in a recovery interval
+  </Accordion>
+  
+  <Accordion title="MAINTAIN - Holding steady power" icon="minus">
+    **Triggered when**: Current power is within ~5W of target
+    
+    **Behavior**:
+    - Uses PID control for fine adjustments
+    - Makes small corrections every second
+    - Compensates for cadence changes
+    
+    **Example**: Holding 200W steady for a 5-minute interval
+  </Accordion>
+</AccordionGroup>
+
+## Common ERG Mode Challenges
+
+### The "ERG Spiral of Death"
+
+<Warning>
+  When cadence drops too low in ERG mode, resistance increases to maintain power, making it even harder to pedal. This creates a spiral where cadence continues to drop.
+</Warning>
+
+**How to avoid it**:
+1. Shift to an easier gear before cadence drops below 60 RPM
+2. Briefly increase cadence to break the spiral
+3. Consider reducing ERG Sensitivity if your bike has high resistance
+4. Take micro-breaks by stopping pedaling for 2-3 seconds to reset resistance
+
+### Power Fluctuations
+
+If power bounces around the target:
+
+- **Reduce ERG Sensitivity**: Lower from 1.0 to 0.5-0.7
+- **Maintain steady cadence**: Cadence changes cause power fluctuations
+- **Check power meter placement**: Ensure consistent power meter readings
+- **Calibrate power table**: More data points improve accuracy
+
+### Delayed Response
+
+If SmartSpin2k is slow to adjust:
+
+- **Increase ERG Sensitivity**: Raise from 1.0 to 1.5-2.0
+- **Check stepper power**: Settings > Stepper Motor Power (increase if needed)
+- **Verify stepper speed**: Ensure stepper isn't limited by mechanical resistance
+- **Lubricate resistance knob**: Physical friction can slow adjustments
+
+## Power Table for ERG Mode
+
+SmartSpin2k builds a Power Table that maps `(cadence, stepper position) → power`:
+
+### How the Power Table is Built
+
+1. **Data collection**: As you ride, SmartSpin2k records:
+   - Current cadence
+   - Current stepper position (resistance level)
+   - Current power output (from power meter or estimation)
+
+2. **Table population**: Values are stored in a 2D lookup table
+   - Cadence increments: 5 RPM bins (40, 45, 50, ... 120 RPM)
+   - Power increments: 5W bins
+
+3. **Usage in ERG mode**: When target power changes, SmartSpin2k looks up the stepper position needed for `(current cadence, target power)` and moves there immediately
+
+4. **Continuous refinement**: The table updates over time as you ride more
+
+### Managing the Power Table
+
+<Steps>
+  <Step title="View power table status">
+    The power table is automatically saved to the device's filesystem (`/PowerTable.txt`).
+  </Step>
+  
+  <Step title="Reset power table">
+    If your bike's resistance characteristics change (e.g., after maintenance), you can reset the table:
+    
+    Web Interface > Developer Tools > Reset Power Table
+  </Step>
+  
+  <Step title="Rebuild after reset">
+    After resetting, ride at various power levels and cadences to rebuild the table.
+  </Step>
+</Steps>
+
+<Note>
+  The power table is saved automatically every 10 seconds when new data is recorded. It persists across reboots.
+</Note>
+
+## Disabling ERG Mode
+
+ERG mode is controlled by the training app, not SmartSpin2k. To disable it:
+
+<Tabs>
+  <Tab title="Zwift">
+    Press the **ERG Mode** button in the bottom-right corner of the screen during a workout.
+    
+    When disabled, you control power manually by shifting gears or adjusting resistance.
+  </Tab>
+  
+  <Tab title="TrainerRoad">
+    TrainerRoad workouts are designed for ERG mode. To disable:
+    
+    1. Switch to "Resistance Mode" in workout settings
+    2. Or use "Level Mode" for manual control
+  </Tab>
+  
+  <Tab title="Other Apps">
+    Look for "ERG Mode", "Resistance Mode", or "Level Mode" toggles in the app's workout settings.
+    
+    Most apps default to ERG mode for structured workouts and disable it for free rides.
+  </Tab>
+</Tabs>
+
+## Advanced: Custom Target Power via BLE
+
+Developers can send custom ERG mode targets using the Fitness Machine Service Control Point:
+
+```cpp
+// SetTargetPower command structure
+uint8_t command[] = {
+  0x05,              // OpCode: SetTargetPower
+  lowByte(watts),    // Target power LSB
+  highByte(watts)    // Target power MSB
+};
+
+// Example: Set 200W target
+uint8_t set200W[] = {0x05, 0xC8, 0x00};
+```
+
+SmartSpin2k responds with:
+```cpp
+// Success response
+uint8_t response[] = {
+  0x80,  // Response Code
+  0x05,  // SetTargetPower OpCode
+  0x01   // Success
+};
+```
+
+For more details, see the [Fitness Machine Service specification](https://www.bluetooth.com/specifications/specs/fitness-machine-service-1-0/) or the SmartSpin2k source code at `src/BLE_Fitness_Machine_Service.cpp:238-255`.
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="Power Calibration" icon="sliders" href="/usage/power-calibration">
+    Calibrate your bike's power output for accurate ERG mode
+  </Card>
+  <Card title="Connecting to Zwift" icon="bluetooth" href="/usage/connecting-to-zwift">
+    Set up SmartSpin2k with training applications
+  </Card>
+</CardGroup>

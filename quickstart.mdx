@@ -1,80 +1,550 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start Guide
+description: Get your SmartSpin2k built, configured, and connected to Zwift or TrainerRoad in under an hour.
 ---
 
-## Get started in three steps
+## What You'll Need
 
-Get your documentation site running locally and make your first customization.
+Before starting, gather these components and tools:
 
-### Step 1: Set up your local environment
+### Required Hardware Components
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+- **ESP32 Development Board** - ESP32-DOIT-DevKit-V1 or compatible
+- **NEMA 17 Stepper Motor** - 1.8° step angle, 12V recommended
+- **TMC2208 or TMC2209 Stepper Driver** - StepStick format
+- **12V Power Supply** - 2A minimum, center-positive barrel jack
+- **3D Printed Parts**:
+  - Case (choose your hardware version)
+  - Knob cup/insert for your specific bike
+  - Gears (11-tooth drive, 40-tooth driven)
+  - Bike mount (specific to your bike model)
+  - Shifter housing
 
-### Step 2: Deploy your changes
+### Optional Components
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+- **Physical Shifter Buttons** - Two momentary push buttons
+- **BLE Power Meter** - For power table calibration (Assioma, Favero, Garmin Vector, etc.)
+- **BLE Heart Rate Monitor** - Any standard BLE HR strap
+- **BLE Cadence Sensor** - If your bike doesn't have one
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+### Tools Required
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+- Soldering iron and solder
+- Wire strippers
+- Screwdrivers (Phillips and flathead)
+- 3D printer (or access to one)
+- USB cable (for initial firmware flash)
+- Computer with web browser
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Pre-assembled kits are available at [SmartSpin2k.com](https://www.smartspin2k.com/purchase-kits) if you prefer not to source components individually.
 </Note>
+
+## Hardware Assembly
+
+<Steps>
+  <Step title="3D Print Components">
+    Download STL files from the [GitHub repository](https://github.com/doudar/SmartSpin2k/tree/develop/Hardware).
+    
+    **Choose your hardware version:**
+    - **V2 - Through Hole**: Recommended for DIY builds (easiest to solder)
+    - **V3 - Integrated PCB**: Latest design (requires SMT experience)
+    
+    **Print these parts:**
+    - Main case (specific to your hardware version)
+    - Bike mount (specific to your bike model - check `Hardware/Common Assets/Bike Mount/`)
+    - Knob cup and insert (match to your bike's resistance knob)
+    - 11-tooth drive gear (attaches to stepper motor)
+    - 40-tooth driven gear (attaches to knob)
+    - Shifter housing
+    
+    <Tip>
+      Check the `Hardware/README.md` for a complete list of supported bikes and their specific mounting requirements.
+    </Tip>
+  </Step>
+
+  <Step title="Assemble or Solder PCB">
+    **For V2 Through Hole PCB:**
+    
+    Follow the [assembly instructions PDF](https://github.com/doudar/SmartSpin2k/blob/develop/SS2kR3BuildingInstructions.pdf).
+    
+    Basic assembly order:
+    1. Solder TMC2208/2209 driver to PCB
+    2. Solder ESP32 headers
+    3. Solder power jack
+    4. Solder stepper motor connector
+    5. Solder shifter button connectors (optional)
+    6. Insert ESP32 into headers
+    
+    **For V3 Integrated PCB:**
+    
+    Gerber files are in `Hardware/V3 - Integrated PCB/PCB/`. Order from JLCPCB, PCBWay, or similar. SMT assembly recommended.
+    
+    <Warning>
+      Ensure TMC2208/2209 driver orientation is correct before soldering. The enable pin should align with markings on the PCB.
+    </Warning>
+  </Step>
+
+  <Step title="Install PCB in Case">
+    1. Insert assembled PCB into the 3D printed case
+    2. Route stepper motor wires through cable management
+    3. Connect stepper motor to 4-pin connector (verify wire order)
+    4. Secure PCB with screws (M3 recommended)
+    5. Connect shifter buttons to headers (if using)
+    
+    From `CHANGELOG.md` hardware improvements:
+    > Increased right side case mounting hole to 5.5mm so the bolt slides in easier
+  </Step>
+
+  <Step title="Mount to Bike">
+    1. Attach the bike-specific mount to your bike's frame
+    2. Install the case onto the mount (should click/snap into place)
+    3. Install the 11-tooth gear onto the stepper motor shaft
+    4. Install the 40-tooth gear and knob cup onto your resistance knob
+    5. Adjust positioning so gears mesh properly (should turn smoothly)
+    6. Tighten all mounting hardware
+    
+    <Tip>
+      Gear meshing is critical. They should engage without binding but also without too much play. Adjust the case position on the mount to optimize gear engagement.
+    </Tip>
+  </Step>
+
+  <Step title="Connect Power">
+    1. Verify your power supply is 12V DC, center-positive
+    2. Check current rating is at least 2A (3A recommended)
+    3. Plug into the barrel jack on the PCB
+    4. LED on ESP32 should illuminate
+    
+    <Warning>
+      Using incorrect voltage (not 12V) or reverse polarity can damage your ESP32 and stepper driver. Double-check before connecting.
+    </Warning>
+  </Step>
+</Steps>
+
+The complete assembly process is detailed in the [SS2kR3 Building Instructions PDF](https://github.com/doudar/SmartSpin2k/blob/develop/SS2kR3BuildingInstructions.pdf).
+
+## Firmware Installation
+
+<Steps>
+  <Step title="Download Latest Firmware">
+    Get the latest release from [GitHub Releases](https://github.com/doudar/SmartSpin2k/releases).
+    
+    Download the `.bin` file (e.g., `SmartSpin2k-v26.1.22.bin`).
+    
+    **Or build from source:**
+    
+    From `README.md:56`:
+    ```bash
+    # Install requirements
+    # 1. Visual Studio Code
+    # 2. PlatformIO extension  
+    # 3. Python
+    # 4. Pre-commit hooks
+    
+    py -m pip install pre-commit
+    pre-commit install --hook-type pre-push
+    
+    # Open project in PlatformIO
+    # Build and upload
+    ```
+  </Step>
+
+  <Step title="Flash via USB">
+    **First-time flash requires USB connection:**
+    
+    1. Connect ESP32 to computer via USB cable
+    2. Open a web browser to [ESP Web Flasher](https://esp.huhn.me/) or use esptool
+    3. Select the `.bin` file you downloaded
+    4. Click "Flash"
+    5. Wait for completion (about 30 seconds)
+    
+    **Using PlatformIO (for developers):**
+    
+    From `platformio.ini:25`:
+    ```ini
+    upload_speed = 921600
+    monitor_speed = 115200
+    ```
+    
+    In PlatformIO, click "Upload" to flash firmware.
+  </Step>
+
+  <Step title="Verify Installation">
+    1. Open Serial Monitor (115200 baud)
+    2. Reset the ESP32 (press reset button)
+    3. You should see boot messages:
+    
+    ```
+    SmartSpin2k v26.1.22
+    Initializing...
+    WiFi: Starting in AP mode
+    SSID: SmartSpin2k
+    IP: 192.168.4.1
+    BLE: Starting server
+    Stepper: Initializing TMC2208
+    Ready!
+    ```
+  </Step>
+</Steps>
+
+## WiFi Configuration
+
+<Steps>
+  <Step title="Connect to Access Point">
+    On first boot, SmartSpin2k creates a WiFi access point.
+    
+    1. On your phone or computer, connect to WiFi network:
+       - **SSID**: `SmartSpin2k` (or your custom device name)
+       - **Password**: `password` (default, or your configured password)
+    
+    2. Open web browser to `http://192.168.4.1`
+    
+    <Note>
+      The ESP32 will wait 10 seconds for WiFi connection before falling back to AP mode.
+    </Note>
+  </Step>
+
+  <Step title="Configure Home WiFi">
+    In the web interface:
+    
+    1. Navigate to **Settings** page
+    2. Scroll to **WiFi Settings** section
+    3. Enter your home WiFi credentials:
+       - **SSID**: Your WiFi network name
+       - **Password**: Your WiFi password  
+       - **Hostname**: `smartspin2k` (or custom name)
+    4. Click **Save Settings**
+    5. Click **Reboot**
+    
+    After reboot, SmartSpin2k will connect to your home WiFi.
+  </Step>
+
+  <Step title="Access via mDNS">
+    Once connected to your home WiFi:
+    
+    1. On your computer/phone (connected to same WiFi)
+    2. Open browser to `http://smartspin2k.local`
+    3. You should see the SmartSpin2k web interface
+    
+    If mDNS doesn't work (some Android devices):
+    - Check serial console for IP address
+    - Use the IP directly (e.g., `http://192.168.1.123`)
+    
+    <Tip>
+      Bookmark the web interface on your phone for easy access during rides.
+    </Tip>
+  </Step>
+</Steps>
+
+## BLE Device Configuration
+
+<Steps>
+  <Step title="Scan for Devices">
+    In the web interface, navigate to **Bluetooth Scanner** page.
+    
+    1. Click **Start Scan**
+    2. Wait 10-20 seconds for devices to appear
+    3. Your BLE sensors should show in the list:
+       - Power meters (FTMS, CPS services)
+       - Heart rate monitors (HR service)
+       - Cadence sensors (CSC service)
+       - Smart bikes (Peloton, Echelon, etc.)
+  </Step>
+
+  <Step title="Connect Power Meter (Optional)">
+    If you have a BLE power meter for calibration:
+    
+    1. Find your power meter in the scan results
+    2. Select it from the **Power Meter** dropdown
+    3. Click **Save**
+    4. SmartSpin2k will connect automatically
+    
+    Supported power meters:
+    - Cycling Power Service (CPS): Assioma, Favero, Garmin Vector, Stages, etc.
+    - FTMS: Wahoo, Elite, Tacx trainers
+    - Peloton (via serial connection)
+    
+    <Note>
+      Power meter connection is optional but recommended for accurate power table calibration.
+    </Note>
+  </Step>
+
+  <Step title="Connect Heart Rate Monitor (Optional)">
+    If you have a BLE heart rate strap:
+    
+    1. Find your HR monitor in scan results
+    2. Select from **Heart Rate** dropdown  
+    3. Click **Save**
+    
+    SmartSpin2k will relay HR data to connected training apps.
+  </Step>
+
+  <Step title="Connect Cadence Sensor (Optional)">
+    If your bike doesn't report cadence:
+    
+    1. Find your cadence sensor in scan results
+    2. Select from **Cadence** dropdown
+    3. Click **Save**
+    
+    From `CHANGELOG.md` (v25.5.31):
+    > Added CSC sensor selection in BLE Scanner html
+  </Step>
+</Steps>
+
+## Stepper Calibration
+
+<Steps>
+  <Step title="Configure Stepper Power">
+    In **Settings** page:
+    
+    1. Find **Stepper Power** setting (in milliamps)
+    2. Start with default: **800-1000 mA**
+    3. If motor is too weak, increase to 1200 mA
+    4. If motor is too hot, decrease to 600 mA
+    
+    From `Main.h:72`:
+    ```cpp
+    void updateStepperPower(int pwr = 0);
+    ```
+    
+    <Warning>
+      Higher current increases torque but generates more heat. The ESP32 will automatically reduce current if temperature gets too high.
+    </Warning>
+  </Step>
+
+  <Step title="Set Shift Step Size">
+    Shift step size controls how much the motor moves per button press.
+    
+    1. **Default**: 200 steps
+    2. For finer control: 100 steps
+    3. For coarser control: 400 steps
+    
+    Test by clicking shifter buttons (up/down) and observing resistance changes.
+  </Step>
+
+  <Step title="Run Initial Homing">
+    Homing calibrates minimum and maximum knob positions.
+    
+    **Automatic homing:**
+    - Happens automatically on first boot
+    - Motor will turn knob to both stops
+    - Saves min/max positions
+    
+    **Manual homing:**
+    - Hold both shifter buttons for 3 seconds
+    - OR request "Calibrate Trainer" in Zwift
+    
+    From `Main.h:80`:
+    ```cpp
+    void goHome(bool bothDirections = false);
+    void _findEndStop(bool moveForward);
+    ```
+    
+    <Tip>
+      You can abort homing at any time by pressing a shifter button.
+    </Tip>
+  </Step>
+
+  <Step title="Adjust Incline Multiplier">
+    Incline multiplier controls resistance sensitivity.
+    
+    1. **Default**: 5.0
+    2. For harder climbs: Increase to 7.0 or 10.0  
+    3. For easier climbing: Decrease to 3.0
+    
+    This multiplies the gradient percentage to determine resistance change.
+    
+    Example: 5% gradient × 5.0 multiplier = 25% resistance increase
+  </Step>
+</Steps>
+
+## Connect to Training App
+
+<Steps>
+  <Step title="Enable Bluetooth on Device">
+    On your phone, tablet, or computer running the training app:
+    
+    1. Enable Bluetooth
+    2. Ensure you're in range of SmartSpin2k (within 10 meters)
+    
+    SmartSpin2k broadcasts these BLE services:
+    - **Fitness Machine (FTMS)** - For controllable trainers
+    - **Cycling Power** - Power meter data  
+    - **Cycling Speed & Cadence** - Cadence/speed data
+    - **Heart Rate** - If HR monitor connected
+  </Step>
+
+  <Step title="Pair in Training App (Zwift Example)">
+    **Zwift pairing:**
+    
+    1. Open Zwift
+    2. Click **Ride** → **Pairing**  
+    3. Look for **SmartSpin2k** or your custom device name
+    4. Click on device in each category:
+       - **Controllable**: SmartSpin2k (FTMS)
+       - **Power Source**: SmartSpin2k or your power meter
+       - **Cadence**: SmartSpin2k or your cadence sensor
+       - **Heart Rate**: Your HR monitor
+    5. Click **Let's Go**
+    
+    <Note>
+      Select SmartSpin2k as "Controllable" to enable automatic resistance control. The resistance will change as you ride in Zwift.
+    </Note>
+  </Step>
+
+  <Step title="Pair in Other Apps">
+    **TrainerRoad:**
+    - Settings → Devices → Add Device
+    - Select SmartSpin2k as Smart Trainer
+    
+    **Rouvy:**
+    - Devices → Add Device  
+    - Select SmartSpin2k (FTMS)
+    
+    **MyWoosh/Kinomap/etc:**
+    - Follow app-specific pairing process
+    - Look for "SmartSpin2k" in available devices
+    
+    From `CHANGELOG.md` (v25.10.19):
+    > Added Rouvy Dircon. Working!
+  </Step>
+
+  <Step title="Test Resistance Control">
+    Start a ride and verify:
+    
+    1. **Power/cadence/speed** display in app
+    2. **Resistance changes** when you hit hills in Zwift
+    3. **ERG mode works** in structured workouts (TrainerRoad)
+    4. **Manual shifters** override resistance when pressed
+    
+    Monitor the web interface **Status** page to see:
+    - Current power, cadence, HR
+    - Target position vs. current position  
+    - BLE connection status
+    - Real-time logs
+  </Step>
+</Steps>
+
+## Power Table Calibration (Optional but Recommended)
+
+<Steps>
+  <Step title="Connect Reference Power Meter">
+    To create an accurate power curve:
+    
+    1. Install power meter pedals or crank-based PM
+    2. Scan for the power meter in BLE Scanner
+    3. Connect as primary power source
+    
+    SmartSpin2k will use this as reference for calibration.
+  </Step>
+
+  <Step title="Perform Calibration Ride">
+    1. Start a ride in Zwift or similar  
+    2. Ride at various resistance levels (easy to hard)
+    3. Vary your cadence (60-110 RPM)
+    4. Include 5-10 minutes at each resistance level
+    
+    SmartSpin2k automatically records:
+    - Resistance position (stepper steps)
+    - Power output (from reference PM)
+    - Cadence (from reference PM or sensor)
+    
+    From `Power_Table.h:25`:
+    ```cpp
+    // Automatically processes power values during rides
+    void processPowerValue(PowerBuffer& powerBuffer, int cadence, Measurement power);
+    ```
+  </Step>
+
+  <Step title="Verify Power Table">
+    After calibration ride:
+    
+    1. Power table saves automatically to LittleFS
+    2. Check web interface for power table entries
+    3. More rides = more accurate power curve
+    
+    The power table:
+    - Interpolates between recorded points
+    - Compensates for cadence variations
+    - Provides accurate power without external PM
+    
+    <Tip>
+      You can export/import power tables via the web interface. Share your calibration with others who have the same bike model.
+    </Tip>
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### SmartSpin2k Won't Connect to WiFi
+
+1. Check SSID and password are correct (case-sensitive)
+2. Ensure you're on 2.4GHz WiFi (ESP32 doesn't support 5GHz)
+3. Check router settings (some block new devices)
+4. Try falling back to AP mode (wait 10 seconds after boot)
+
+### Training App Can't Find SmartSpin2k
+
+1. Verify Bluetooth is enabled on your device
+2. Check SmartSpin2k is powered on (LED lit)
+3. Try moving closer (BLE range is ~10 meters)
+4. Restart SmartSpin2k
+5. Check serial console for BLE errors
+
+From `CHANGELOG.md` (v25.9.8):
+> BLE advertisement data reworked and optimized
+
+### Stepper Motor Not Moving
+
+1. Check 12V power supply is connected
+2. Verify stepper motor wires are in correct order
+3. Check TMC2208 driver is seated properly
+4. Increase stepper power in settings
+5. Check serial console for driver errors
+
+### Resistance Changes Are Too Aggressive
+
+1. Decrease **Incline Multiplier** (try 3.0)
+2. In ERG mode, decrease **ERG Sensitivity**
+3. Adjust **Shift Step Size** for finer control
+
+### Power Readings Are Inaccurate
+
+1. Connect a reference power meter for calibration
+2. Perform power table calibration rides
+3. Use **Power Correction Factor** as temporary fix
+4. Reset power table if you've changed hardware
+
+<Warning>
+  If you experience persistent issues, check the [GitHub Issues](https://github.com/doudar/SmartSpin2k/issues) or ask in the [Facebook Group](https://www.facebook.com/groups/716297469953492/).
+</Warning>
+
+## Factory Reset
+
+To reset SmartSpin2k to defaults:
+
+1. **Hold both shifter buttons** during power-on
+2. Keep holding for 5 seconds  
+3. Release when LED blinks
+4. Settings reset to defaults
+5. WiFi configuration erased
+6. Power table cleared
+
+From `CHANGELOG.md` (v0.1.1.2):
+> Holding both shifters at boot now erases LittleFS as well as resetting settings (firmware remains intact)
+
+<Note>
+  Firmware is NOT erased during factory reset. Only settings and calibration data are cleared.
+</Note>
+
+## Next Steps
+
+Now that SmartSpin2k is configured and running:
+
+- **Explore [all features](/features)** including ERG mode and power calibration
+- **Join the community** on [Facebook](https://www.facebook.com/groups/716297469953492/)
+- **Download the mobile app** for [iOS](https://apps.apple.com/us/app/smartspin2k-companion-app/id6477836948) or [Android](https://play.google.com/store/apps/details?id=com.smartspin2k.app)
+- **Contribute to development** on [GitHub](https://github.com/doudar/SmartSpin2k)
+- **Share your build** and help others in the community
+
+Happy riding! 🚴

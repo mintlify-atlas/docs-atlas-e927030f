@@ -1,0 +1,435 @@
+---
+title: Configuration Settings
+description: Complete reference for SmartSpin2k configuration constants and parameters
+---
+
+## Overview
+
+SmartSpin2k uses a comprehensive set of configuration constants defined in `settings.h` and user parameters in `SmartSpin_parameters.h`. These settings control hardware behavior, stepper motor operation, ERG mode, power tables, and Bluetooth connectivity.
+
+## Firmware Update Settings
+
+<ParamField path="AUTO_FIRMWARE_UPDATE" type="boolean" default="true">
+  Enable automatic firmware updates on boot.
+</ParamField>
+
+<ParamField path="FW_UPDATEURL" type="string" default="https://raw.githubusercontent.com/doudar/OTAUpdates/main/">
+  Default URL to get firmware updates from. If changed, you'll need to update the root certificate in `/include/cert.h`.
+</ParamField>
+
+<ParamField path="FW_VERSIONFILE" type="string" default="version.txt">
+  File that contains version information.
+</ParamField>
+
+<ParamField path="FW_BINFILE" type="string" default="firmware.bin">
+  Path to the latest firmware binary.
+</ParamField>
+
+<ParamField path="DATA_UPDATEURL" type="string" default="https://raw.githubusercontent.com/doudar/SmartSpin2k/develop/data">
+  Data directory source for web interface files.
+</ParamField>
+
+## Device Identity Settings
+
+<ParamField path="DEVICE_NAME" type="string" default="SmartSpin2k">
+  Default Bluetooth, WiFi, and MDNS name for the device.
+</ParamField>
+
+<ParamField path="DEFAULT_PASSWORD" type="string" default="password">
+  Default WiFi password for AP mode.
+</ParamField>
+
+## File System Settings
+
+<ParamField path="configFILENAME" type="string" default="/config.txt">
+  Name of local file to save configuration in LittleFS.
+</ParamField>
+
+<ParamField path="POWER_TABLE_FILENAME" type="string" default="/PowerTable.txt">
+  Name of the local file to save the power calibration table.
+</ParamField>
+
+<ParamField path="BUILD_VERSION_FILENAME" type="string" default="/build_version.txt">
+  Name of the local file to save build version for OTA WiFi issue handling.
+</ParamField>
+
+## Stepper Motor Settings
+
+<ParamField path="DEFAULT_STEPPER_POWER" type="integer" default="900">
+  Stepper peak current in milliamps. Hardware restricted to a maximum of 2000mA on the TMC2225. RMS current is less.
+  
+  **Valid Range:** 0-2000 mA
+</ParamField>
+
+<ParamField path="DEFAULT_SHIFT_STEP" type="integer" default="1200">
+  The amount to move the stepper motor for a single shift press. This is one of the most important calibration values.
+  
+  It takes 2,181.76 steps to rotate the knob 1 full revolution on hardware version 1.
+</ParamField>
+
+<ParamField path="STEPPER_ACCELERATION" type="integer" default="3000">
+  Stepper acceleration in steps per second squared (steps/s²).
+</ParamField>
+
+<ParamField path="DEFAULT_STEPPER_SPEED" type="integer" default="3500">
+  Stepper maximum speed in steps per second (steps/s).
+</ParamField>
+
+<ParamField path="HOLD_PWR_SCALER" type="float" default="0.3">
+  Divides the RMS current to calculate hold current when the motor is stationary.
+</ParamField>
+
+<ParamField path="PWR_SCALER_FOR_HOMING" type="float" default="0.8">
+  Reduces power during homing operation to improve stall detection.
+</ParamField>
+
+<ParamField path="STEALTHCHOP" type="boolean" default="true">
+  Enable stealthChop mode for quieter operation.
+</ParamField>
+
+<ParamField path="DEFAULT_HOMING_SENSITIVITY" type="integer" default="50">
+  Default sensitivity value for detecting stall during homing.
+</ParamField>
+
+## Incline and Resistance Settings
+
+<ParamField path="INCLINE_MULTIPLIER" type="float" default="7.0">
+  Multiple required to convert incline from remote client (percent grade × 100) into stepper steps.
+</ParamField>
+
+<ParamField path="MIN_PCF" type="float" default="0.5">
+  Minimum value for power correction factor user setting.
+</ParamField>
+
+<ParamField path="MAX_PCF" type="float" default="2.5">
+  Maximum value for power correction factor user setting.
+</ParamField>
+
+<ParamField path="DEFAULT_MIN_WATTS" type="integer" default="50">
+  Default minimum watts to stop stepper. Used to set the lower travel limit for the motor.
+</ParamField>
+
+<ParamField path="DEFAULT_MAX_WATTS" type="integer" default="1000">
+  Default maximum watts that the bike brake can absorb. Used to set the upper travel limit for the motor.
+</ParamField>
+
+<ParamField path="DEFAULT_STEPPER_TRAVEL" type="integer" default="200000000">
+  Default ± stepper travel limit used until the power table has enough data to compute actual travel limits.
+</ParamField>
+
+## Bike-Specific Settings
+
+### Peloton
+
+<ParamField path="MIN_PELOTON_RESISTANCE" type="integer" default="5">
+  Minimum resistance value on a Peloton bike. Sets the lower travel limit.
+</ParamField>
+
+<ParamField path="MAX_PELOTON_RESISTANCE" type="integer" default="98">
+  Maximum resistance value on a Peloton bike. Sets the upper travel limit.
+</ParamField>
+
+<ParamField path="PELOTON_TX" type="boolean" default="true">
+  Interrogate Peloton bike for resistance data.
+</ParamField>
+
+<ParamField path="TX_CHECK_INTERVAL" type="integer" default="20">
+  How long to wait before next TX attempt if not receiving Peloton messages.
+</ParamField>
+
+<ParamField path="AUX_BUF_SIZE" type="integer" default="10">
+  Size of the auxiliary serial buffer for Peloton communication.
+</ParamField>
+
+### Echelon
+
+<ParamField path="MIN_ECHELON_RESISTANCE" type="integer" default="5">
+  Minimum resistance value on an Echelon bike. Sets the lower travel limit.
+</ParamField>
+
+<ParamField path="MAX_ECHELON_RESISTANCE" type="integer" default="30">
+  Maximum resistance value on an Echelon bike. Sets the upper travel limit.
+</ParamField>
+
+### Generic Bikes
+
+<ParamField path="DEFAULT_RESISTANCE_RANGE" type="integer" default="2000">
+  Resistance range when no bike with resistance feedback is connected.
+</ParamField>
+
+## Hardware Configuration
+
+<ParamField path="DEBOUNCE_DELAY" type="integer" default="200">
+  Debounce delay for shifters in milliseconds. Increase if you have false shifts, decrease if shifting takes too long.
+</ParamField>
+
+<ParamField path="REV_PIN" type="integer" default="34">
+  Hardware revision check pin.
+</ParamField>
+
+<ParamField path="R_SENSE" type="float" default="0.11">
+  Sense resistor value for TMC stepper driver.
+</ParamField>
+
+<ParamField path="LED_PIN" type="integer" default="2">
+  Hardware pin for indicator LED. Note: Internal LED on ESP32 Dev board is also pin 2.
+</ParamField>
+
+<ParamField path="THROTTLE_TEMP" type="integer" default="90">
+  ESP32 temperature (°C) at which to start reducing stepper motor driver power output.
+</ParamField>
+
+## Bluetooth Settings
+
+<ParamField path="BLE_NOTIFY_DELAY" type="integer" default="503">
+  Loop speed for SmartSpin2k BLE communications in milliseconds.
+</ParamField>
+
+<ParamField path="BLE_CLIENT_DELAY" type="integer" default="101">
+  Loop speed for SmartSpin2k BLE client reconnect in milliseconds.
+</ParamField>
+
+<ParamField path="BLE_CLIENT_DISCONNECT_TIMEOUT" type="integer" default="5000">
+  If no data is received from a connected device after this duration (ms), the client will be disconnected.
+</ParamField>
+
+<ParamField path="NUM_BLE_DEVICES" type="integer" default="3">
+  Number of devices that can be connected to the client (myBLEDevices size).
+</ParamField>
+
+<ParamField path="CONNECTED_POWER_METER" type="string" default="none">
+  Name of default power meter. Use "any" to connect to anything, "none" to connect to nothing.
+</ParamField>
+
+<ParamField path="CONNECTED_HEART_MONITOR" type="string" default="none">
+  Name of default heart rate monitor. Use "any" to connect to anything, "none" to connect to nothing.
+</ParamField>
+
+<ParamField path="CONNECTED_REMOTE" type="string" default="none">
+  Name of default remote. Use "any" to connect to anything, "none" to connect to nothing.
+</ParamField>
+
+<ParamField path="SHIFTERS_HOLD_FOR_SCAN" type="integer" default="2">
+  Number of main loops the shifters need to be held before a BLE scan is initiated.
+</ParamField>
+
+<ParamField path="BLE_RECONNECT_SCAN_INTERVAL" type="integer" default="6000">
+  BLE automatic reconnect scan interval in milliseconds.
+</ParamField>
+
+<ParamField path="DEFAULT_SCAN_DURATION" type="integer" default="4000">
+  Initial and web scan duration in milliseconds.
+</ParamField>
+
+<ParamField path="BATTERY_UPDATE_INTERVAL_MILLIS" type="integer" default="300000">
+  Interval for polling BLE battery level updates (5 minutes).
+</ParamField>
+
+## Network Settings
+
+<ParamField path="WIFI_CONNECT_TIMEOUT" type="integer" default="10">
+  How long to try STA mode before falling back to AP mode (seconds).
+</ParamField>
+
+<ParamField path="WEBSERVER_DELAY" type="integer" default="12">
+  Loop speed for the web server in milliseconds.
+</ParamField>
+
+<ParamField path="DIRCON_MANAGER_DELAY" type="integer" default="20">
+  Loop speed of the DirCon manager in milliseconds.
+</ParamField>
+
+<ParamField path="AUX_SERIAL_DELAY" type="integer" default="100">
+  Loop speed of the auxiliary serial timer in milliseconds.
+</ParamField>
+
+## Memory and Buffer Settings
+
+<ParamField path="DEBUG_LOG_BUFFER_SIZE" type="integer" default="600">
+  Size of the debug log buffer in bytes.
+</ParamField>
+
+<ParamField path="USERCONFIG_JSON_SIZE" type="integer" default="2600">
+  Maximum size of user configuration JSON (2000 + DEBUG_LOG_BUFFER_SIZE).
+</ParamField>
+
+<ParamField path="RUNTIMECONFIG_JSON_SIZE" type="integer" default="1600">
+  Maximum size of runtime configuration JSON (1000 + DEBUG_LOG_BUFFER_SIZE).
+</ParamField>
+
+## Task Stack Sizes
+
+<ParamField path="MAIN_STACK" type="integer" default="4500">
+  Stack size for main task in bytes.
+</ParamField>
+
+<ParamField path="BLE_CLIENT_STACK" type="integer" default="6000">
+  Stack size for BLE client task. Handles BLE scans, connections, and notify data.
+</ParamField>
+
+## FTMS Settings
+
+<ParamField path="FTMS_PASSTHROUGH" type="boolean" default="false">
+  Pass all FTMS commands sent to SS2k down to a connected FTMS device.
+</ParamField>
+
+## Configuration Example
+
+```cpp
+// Example: Custom stepper configuration
+#define DEFAULT_STEPPER_POWER 1200  // Increase for stronger motor
+#define DEFAULT_SHIFT_STEP 1500     // Adjust based on bike gearing
+#define DEFAULT_STEPPER_SPEED 4000  // Faster movement
+#define STEPPER_ACCELERATION 3500   // Quicker acceleration
+
+// Example: Custom power limits for your bike
+#define DEFAULT_MIN_WATTS 75
+#define DEFAULT_MAX_WATTS 1200
+
+// Example: Enable automatic BLE connections
+#define CONNECTED_POWER_METER "any"
+#define CONNECTED_HEART_MONITOR "any"
+```
+
+## User Parameters
+
+The `userParameters` class manages user-configurable settings that are saved to LittleFS:
+
+<ParamField path="firmwareUpdateURL" type="string">
+  Custom firmware update URL.
+</ParamField>
+
+<ParamField path="deviceName" type="string">
+  Custom device name for Bluetooth and WiFi.
+</ParamField>
+
+<ParamField path="shiftStep" type="integer">
+  Custom shift step value. Should be calibrated per bike installation.
+</ParamField>
+
+<ParamField path="stealthChop" type="boolean">
+  Enable/disable stealthChop mode.
+</ParamField>
+
+<ParamField path="inclineMultiplier" type="float">
+  Custom incline multiplier for fine-tuning resistance changes.
+</ParamField>
+
+<ParamField path="powerCorrectionFactor" type="float">
+  Correction factor for power measurements.
+  
+  **Valid Range:** 0.5 - 2.5
+</ParamField>
+
+<ParamField path="ERGSensitivity" type="float" default="3.0">
+  ERG mode sensitivity. Higher values make ERG mode more aggressive.
+</ParamField>
+
+<ParamField path="stepperPower" type="integer">
+  Custom stepper current in milliamps.
+</ParamField>
+
+<ParamField path="stepperSpeed" type="integer">
+  Custom stepper speed in steps/s.
+</ParamField>
+
+<ParamField path="maxWatts" type="integer">
+  Maximum watts for your bike setup.
+</ParamField>
+
+<ParamField path="minWatts" type="integer">
+  Minimum watts for your bike setup.
+</ParamField>
+
+<ParamField path="stepperDir" type="boolean">
+  Reverse stepper direction if needed.
+</ParamField>
+
+<ParamField path="shifterDir" type="boolean">
+  Reverse shifter button mapping if needed.
+</ParamField>
+
+<ParamField path="pTab4Pwr" type="boolean" default="false">
+  Use power table to estimate power instead of power meter.
+</ParamField>
+
+<ParamField path="udpLogEnabled" type="boolean" default="false">
+  Enable UDP logging for debugging.
+</ParamField>
+
+<ParamField path="FTMSControlPointWrite" type="boolean" default="false">
+  Enable writing to FTMS control point.
+</ParamField>
+
+<ParamField path="homingSensitivity" type="integer" default="50">
+  Sensitivity for detecting stall during homing operation.
+</ParamField>
+
+<ParamField path="ssid" type="string">
+  WiFi SSID to connect to.
+</ParamField>
+
+<ParamField path="password" type="string">
+  WiFi password.
+</ParamField>
+
+<ParamField path="connectedPowerMeter" type="string" default="none">
+  Name of power meter to connect to.
+</ParamField>
+
+<ParamField path="connectedHeartMonitor" type="string" default="none">
+  Name of heart rate monitor to connect to.
+</ParamField>
+
+<ParamField path="connectedRemote" type="string" default="none">
+  Name of remote control to connect to.
+</ParamField>
+
+## Runtime Parameters
+
+The `RuntimeParameters` class manages transient state during operation:
+
+<ParamField path="watts" type="Measurement">
+  Current, target, min, and max power measurements.
+</ParamField>
+
+<ParamField path="hr" type="Measurement">
+  Current, target, min, and max heart rate.
+</ParamField>
+
+<ParamField path="cad" type="Measurement">
+  Current, target, min, and max cadence.
+</ParamField>
+
+<ParamField path="batt" type="Measurement">
+  Battery level measurement.
+</ParamField>
+
+<ParamField path="resistance" type="Measurement">
+  Current resistance level.
+</ParamField>
+
+<ParamField path="targetIncline" type="float">
+  Target incline/resistance position.
+</ParamField>
+
+<ParamField path="simulatedSpeed" type="float">
+  Simulated speed for virtual rides.
+</ParamField>
+
+<ParamField path="FTMSMode" type="uint8_t">
+  Current FTMS control mode.
+</ParamField>
+
+<ParamField path="shifterPosition" type="integer">
+  Current gear/position from shifter.
+</ParamField>
+
+<ParamField path="homed" type="boolean">
+  Whether the stepper has been homed.
+</ParamField>
+
+## See Also
+
+- [Power Table Configuration](/api/power-table) - Power calibration table format
+- [ERG Configuration](/api/erg-configuration) - ERG mode settings and tuning

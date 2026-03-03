@@ -1,0 +1,334 @@
+---
+title: Power Table Configuration
+description: Power calibration table format and configuration for accurate power estimation
+---
+
+## Overview
+
+The Power Table is a calibration system that maps stepper motor positions to power output at different cadences. This allows SmartSpin2k to:
+
+- Accurately control resistance in ERG mode
+- Estimate power output when no power meter is connected (`pTab4Pwr` mode)
+- Set intelligent min/max travel limits
+- Adapt to your specific bike's resistance curve
+
+The power table is automatically populated during normal riding and saved to LittleFS.
+
+## Table Structure
+
+### Dimensions
+
+<ParamField path="POWERTABLE_WATT_SIZE" type="integer" default="30">
+  Number of entries in the watt dimension of the power lookup table.
+  
+  **Range:** 0 - 900 watts (30 entries × 30 watt increment)
+</ParamField>
+
+<ParamField path="POWERTABLE_CAD_SIZE" type="integer" default="10">
+  Number of entries in the cadence dimension of the power lookup table.
+  
+  **Range:** 60 - 105 RPM (10 entries × 5 RPM increment)
+</ParamField>
+
+<ParamField path="POWERTABLE_WATT_INCREMENT" type="integer" default="30">
+  Size of increments in watts for the power lookup table. Must be a decimal for proper calculation.
+</ParamField>
+
+<ParamField path="MINIMUM_TABLE_CAD" type="integer" default="60">
+  Starting cadence value for the cadence dimension of the table.
+</ParamField>
+
+<ParamField path="POWERTABLE_CAD_INCREMENT" type="integer" default="5">
+  Size of increments in cadence (RPM) for the power lookup table. Must be a decimal for proper calculation.
+</ParamField>
+
+### Table Storage
+
+<ParamField path="TABLE_VERSION" type="integer" default="6">
+  Version number of the power table format. Used to detect incompatible table formats when loading from storage.
+</ParamField>
+
+<ParamField path="TABLE_DIVISOR" type="float" default="10.0">
+  Divisor applied to stepper positions before storing in table to save memory.
+  
+  **Example:** Position 12000 is stored as 1200 (12000 / 10)
+</ParamField>
+
+## Data Collection Settings
+
+<ParamField path="POWER_SAMPLES" type="integer" default="10">
+  Number of similar power samples to take before writing a new entry to the power table.
+  
+  This helps ensure accuracy by requiring consistent readings before recording.
+</ParamField>
+
+<ParamField path="POWER_TABLE_SAVE_INTERVAL" type="integer" default="240000">
+  How often (in milliseconds) to save the power table if no new data is added and the user is pedaling.
+  
+  **Default:** 240000 ms (4 minutes)
+</ParamField>
+
+<ParamField path="MINIMUM_RELIABLE_POSITIONS" type="integer" default="3">
+  Minimum number of positions recorded in the active table before attempting to load a saved table.
+  
+  Increase this value if the offset for the loaded table is inaccurate.
+</ParamField>
+
+<ParamField path="NORMAL_CAD" type="integer" default="90">
+  Normal/default cadence value used in power table calculations and other areas.
+</ParamField>
+
+## Neighbor Weighting
+
+The power table uses a neighbor weighting system to improve accuracy when exact values aren't available:
+
+<ParamField path="MAX_NEIGHBOR_WEIGHT" type="integer" default="20">
+  Maximum downvotes that a neighbor entry can have (2 × POWER_SAMPLES).
+</ParamField>
+
+<ParamField path="MIN_NEIGHBOR_WEIGHT" type="integer" default="0">
+  Minimum downvotes that a neighbor entry can have.
+</ParamField>
+
+<ParamField path="HORIZONTAL_NEIGHBOR_RANGE" type="float" default="0.6">
+  Maximum distance a failed neighbor can be horizontally (watt dimension) from target position.
+</ParamField>
+
+<ParamField path="VERTICAL_NEIGHBOR_RANGE" type="float" default="0.8">
+  Maximum distance a failed neighbor can be vertically (cadence dimension) from target position.
+</ParamField>
+
+## Table Entry Structure
+
+### TableEntry Class
+
+Each cell in the power table contains:
+
+```cpp
+class TableEntry {
+  public:
+    int16_t targetPosition;  // Stepper position (divided by TABLE_DIVISOR)
+    int8_t readings;         // Number of readings for this entry
+};
+```
+
+<ParamField path="targetPosition" type="int16_t" default="INT16_MIN">
+  Stepper motor position for this watt/cadence combination, divided by TABLE_DIVISOR to save memory.
+  
+  **Default:** INT16_MIN indicates no data recorded for this cell.
+</ParamField>
+
+<ParamField path="readings" type="int8_t" default="0">
+  Number of times this position has been confirmed. Higher values indicate more reliable data.
+</ParamField>
+
+### PowerEntry Class
+
+Temporary buffer entry used during data collection:
+
+```cpp
+class PowerEntry {
+  public:
+    int watts;
+    int resistance;
+    int32_t targetPosition;
+    int cad;
+    int readings;
+};
+```
+
+### PowerBuffer Class
+
+Collects samples before writing to the table:
+
+```cpp
+class PowerBuffer {
+  public:
+    PowerEntry powerEntry[POWER_SAMPLES];
+    void set(int);         // Add a sample at index
+    void reset();          // Clear all samples
+    int getReadings();     // Count valid samples
+};
+```
+
+## File Format
+
+The power table is saved to `/PowerTable.txt` in LittleFS with the following binary format:
+
+1. **Header:**
+   - `int version` - Table version (must match TABLE_VERSION)
+   - `int size` - Total number of valid readings
+   - `bool isHomed` - Whether homing was performed when table was created
+
+2. **Data:** (POWERTABLE_CAD_SIZE × POWERTABLE_WATT_SIZE entries)
+   - For each cadence row (60, 65, 70, ... 105 RPM):
+     - For each watt column (0, 30, 60, ... 870 watts):
+       - `int16_t targetPosition` - Stepper position / 10
+       - `int8_t readings` - Number of readings
+
+## Power Table API
+
+### PowerTable Class Methods
+
+<ParamField path="processPowerValue()" type="void">
+  Process a new power reading and potentially add it to the table.
+  
+  **Parameters:**
+  - `PowerBuffer& powerBuffer` - Buffer for collecting samples
+  - `int cadence` - Current cadence in RPM
+  - `Measurement watts` - Current power measurement
+  
+  **Behavior:**
+  - Only accepts readings within configured cadence and watt ranges
+  - Requires consistent position (within 2× shift step range)
+  - Fills buffer with POWER_SAMPLES before creating table entry
+</ParamField>
+
+<ParamField path="lookup()" type="int32_t">
+  Find the stepper position for a given watt and cadence combination.
+  
+  **Parameters:**
+  - `int watts` - Target power in watts
+  - `int cad` - Target cadence in RPM
+  
+  **Returns:** Stepper position, or RETURN_ERROR (INT32_MIN) if not found
+</ParamField>
+
+<ParamField path="lookupWatts()" type="int32_t">
+  Find the power output for a given cadence and stepper position.
+  
+  **Parameters:**
+  - `int cad` - Current cadence in RPM
+  - `int32_t targetPosition` - Current stepper position
+  
+  **Returns:** Estimated watts, or RETURN_ERROR (INT32_MIN) if not found
+</ParamField>
+
+<ParamField path="setStepperMinMax()" type="void">
+  Automatically set min/max stepper travel limits based on power table data and user-configured min/max watts.
+  
+  **Priority order:**
+  1. Homing-detected limits (if homed)
+  2. Resistance feedback limits (if available)
+  3. Power table-calculated limits
+  4. Default travel limits
+</ParamField>
+
+<ParamField path="reset()" type="bool">
+  Reset the entire power table and delete the saved file.
+  
+  **Returns:** true if successful
+  
+  **Note:** Also resets homing limits and homed status
+</ParamField>
+
+<ParamField path="_save()" type="bool">
+  Save the current power table to LittleFS.
+  
+  **Returns:** true if successful, false if:
+  - Homing was not performed
+  - Less than 1 valid reading exists
+  - File write failed
+</ParamField>
+
+<ParamField path="_manageSaveState()" type="bool">
+  Automatically manage loading and periodic saving of the power table.
+  
+  **Parameters:**
+  - `bool canSkipReliabilityChecks` - Skip checks when forcing load
+  
+  **Behavior:**
+  - Loads saved table on first call (if homed)
+  - Compares active vs saved data quality
+  - Automatically saves every POWER_TABLE_SAVE_INTERVAL ms
+</ParamField>
+
+## Usage Examples
+
+### Normal Operation (Automatic Population)
+
+```cpp
+// Power table is automatically populated during riding
+// No user code required - just ride!
+ergMode->runERG();
+```
+
+The table will automatically:
+1. Collect 10 consistent samples at each resistance level
+2. Average the samples
+3. Store in the appropriate table cell
+4. Save to flash every 4 minutes
+
+### Manual Reset
+
+```cpp
+// Reset power table (e.g., after changing bikes)
+powerTable->reset();
+userConfig->setHMin(INT32_MIN);
+userConfig->setHMax(INT32_MIN);
+userConfig->saveToLittleFS();
+```
+
+### Power Estimation Mode (pTab4Pwr)
+
+```cpp
+// Enable power estimation from table instead of power meter
+userConfig->setPTab4Pwr(true);
+userConfig->saveToLittleFS();
+
+// During operation, watts are estimated from position
+int estimatedWatts = powerTable->lookupWatts(
+  rtConfig->cad.getValue(),
+  ss2k->getCurrentPosition()
+);
+```
+
+### ERG Mode Lookup
+
+```cpp
+// ERG mode uses table to jump to target power
+int targetWatts = 200;
+int currentCadence = 85;
+
+int32_t targetPosition = powerTable->lookup(targetWatts, currentCadence);
+if (targetPosition != RETURN_ERROR) {
+  ss2k->setTargetPosition(targetPosition);
+}
+```
+
+## Data Collection Requirements
+
+For optimal power table accuracy:
+
+1. **Homing Required:** Power table load/save requires successful homing
+2. **Power Meter:** Initial population requires a connected power meter
+3. **Cadence Range:** Ride at various cadences (60-105 RPM)
+4. **Power Range:** Ride at various power levels (0-max watts)
+5. **Consistency:** Stay at each resistance level for 10+ seconds
+6. **Coverage:** More data points = better accuracy
+
+## Troubleshooting
+
+### Table Not Saving
+
+- Ensure homing has been performed successfully
+- Check that you have at least 1 valid reading
+- Verify LittleFS has sufficient free space
+
+### Inaccurate Power Estimates
+
+- Perform homing to ensure consistent position reference
+- Ride through full power range to populate more cells
+- Increase POWER_SAMPLES for more accuracy (slower population)
+- Reset table if bike configuration changed significantly
+
+### ERG Mode Jumps Too Far
+
+- Verify shift step is properly calibrated
+- Check that table has sufficient data in target power range
+- Adjust ERG_MODE_PID_WINDOW if table lookups are unreliable
+
+## See Also
+
+- [Configuration Settings](/api/settings) - Overall system configuration
+- [ERG Configuration](/api/erg-configuration) - ERG mode behavior settings

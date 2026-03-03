@@ -1,0 +1,324 @@
+---
+title: Cycling Speed and Cadence Service
+description: Broadcasting speed and cadence measurements via standard BLE CSC protocol
+---
+
+## Overview
+
+The Cycling Speed and Cadence Service (CSC) broadcasts wheel and crank revolution data that cycling apps use to calculate speed and cadence. This is a simpler alternative to the Cycling Power Service for apps that only need speed/cadence data.
+
+## Service UUID
+
+<ParamField path="Service UUID" type="UUID">
+  `0x1816` (Cycling Speed and Cadence Service)
+</ParamField>
+
+## Characteristics
+
+### CSC Measurement
+
+<ParamField path="UUID" type="UUID">
+  `0x2A5B`
+</ParamField>
+
+<ParamField path="Properties" type="flags">
+  NOTIFY
+</ParamField>
+
+Broadcasts wheel and crank revolution data.
+
+**Data Format:**
+
+```
+Byte 0: Flags (uint8)
+  Bit 0: Wheel Revolution Data Present (1)
+  Bit 1: Crank Revolution Data Present (1)
+  Bits 2-7: Reserved (0)
+
+If Wheel Revolution Data Present:
+  Byte 1-4: Cumulative Wheel Revolutions (uint32)
+    Total wheel rotations since device start
+    Little-endian byte order
+    
+  Byte 5-6: Last Wheel Event Time (uint16)
+    Unit: 1/1024 seconds
+    Rolls over every 64 seconds
+    Little-endian byte order
+
+If Crank Revolution Data Present:
+  Byte 7-8: Cumulative Crank Revolutions (uint16)
+    Total crank rotations since device start
+    Little-endian byte order
+    
+  Byte 9-10: Last Crank Event Time (uint16)
+    Unit: 1/1024 seconds
+    Rolls over every 64 seconds
+    Little-endian byte order
+```
+
+**Example Notification (both wheel and crank data):**
+
+```
+0x03                        # Flags: wheel + crank present
+0x2F 0x35 0x00 0x00        # 13,615 wheel revolutions
+0x40 0x06                  # 1600 ticks (~1.56 seconds)
+0x47 0x0D                  # 3,399 crank revolutions  
+0xA0 0x02                  # 672 ticks (~0.66 seconds)
+```
+
+### CSC Feature
+
+<ParamField path="UUID" type="UUID">
+  `0x2A5C`
+</ParamField>
+
+<ParamField path="Properties" type="flags">
+  READ
+</ParamField>
+
+Describes the capabilities of the speed/cadence sensor.
+
+**Value (2 bytes):**
+```
+Byte 0-1: Feature Flags (uint16, little-endian)
+  Bit 0: Wheel Revolution Data Supported (1)
+  Bit 1: Crank Revolution Data Supported (1)
+  Bit 2: Multiple Sensor Locations Supported (0)
+  Bits 3-15: Reserved (0)
+  
+  Value: [0x03, 0x00]
+```
+
+## Data Sources
+
+SmartSpin2k populates CSC measurements from:
+
+```cpp
+csc.cumulativeWheelRevolutions = spinBLEClient.cscCumulativeWheelRev;
+csc.lastWheelEventTime = spinBLEClient.cscLastWheelEvtTime;
+csc.cumulativeCrankRevolutions = spinBLEClient.cscCumulativeCrankRev;
+csc.lastCrankEventTime = spinBLEClient.cscLastCrankEvtTime;
+```
+
+**Sources (priority order):**
+1. Connected CSC sensor via BLE client
+2. Connected power meter with revolution data
+3. Calculated from internal cadence and speed values
+
+## Time Units & Rollover
+
+<Warning>
+  Both wheel and crank event times use **1/1024 second** resolution and roll over every 64 seconds. Apps must handle rollover when calculating speed and cadence.
+</Warning>
+
+**Event Time:**
+- Resolution: 1/1024 seconds (~0.977 ms per tick)
+- Range: 0 to 65535 ticks
+- Rollover: Every 64 seconds (65536 / 1024)
+- Data type: uint16, little-endian
+
+## Speed Calculation
+
+Cycling apps calculate speed from consecutive wheel revolution notifications:
+
+```javascript
+function calculateSpeed(prevWheelRev, prevWheelTime, currWheelRev, currWheelTime, wheelCircumference) {
+  let deltaRev = currWheelRev - prevWheelRev;
+  let deltaTime = currWheelTime - prevWheelTime;
+  
+  // Handle rollover (64-second period for 1/1024s resolution)
+  if (deltaTime < 0) deltaTime += 65536;
+  
+  // Convert to km/h
+  // deltaTime is in 1/1024 second units
+  let timeSeconds = deltaTime / 1024;
+  let distanceMeters = deltaRev * wheelCircumference;
+  let speedKmh = (distanceMeters / timeSeconds) * 3.6;
+  
+  return speedKmh;
+}
+```
+
+**Wheel Circumference:**
+Must be configured in the cycling app. Typical values:
+- 700x23c: 2096 mm
+- 700x25c: 2105 mm  
+- 700x28c: 2136 mm
+- 650x23c: 1944 mm
+
+## Cadence Calculation
+
+Cycling apps calculate cadence from consecutive crank revolution notifications:
+
+```javascript
+function calculateCadence(prevCrankRev, prevCrankTime, currCrankRev, currCrankTime) {
+  let deltaRev = currCrankRev - prevCrankRev;
+  let deltaTime = currCrankTime - prevCrankTime;
+  
+  // Handle rollover
+  if (deltaTime < 0) deltaTime += 65536;
+  
+  // Convert to RPM
+  // deltaTime is in 1/1024 second units
+  let timeMinutes = (deltaTime / 1024) / 60;
+  let cadence = deltaRev / timeMinutes;
+  
+  return cadence;
+}
+```
+
+**Alternative calculation:**
+```javascript
+function calculateCadenceAlt(prevCrankRev, prevCrankTime, currCrankRev, currCrankTime) {
+  let deltaRev = currCrankRev - prevCrankRev;
+  let deltaTime = currCrankTime - prevCrankTime;
+  
+  if (deltaTime < 0) deltaTime += 65536;
+  
+  // RPM = (revolutions * 1024 * 60) / ticks
+  let cadence = (deltaRev * 1024 * 60) / deltaTime;
+  return cadence;
+}
+```
+
+## Rollover Handling Example
+
+```javascript
+class CSCProcessor {
+  constructor() {
+    this.prevWheelRev = null;
+    this.prevWheelTime = null;
+    this.prevCrankRev = null;
+    this.prevCrankTime = null;
+  }
+  
+  processNotification(data) {
+    const flags = data[0];
+    let offset = 1;
+    
+    let wheelRev, wheelTime, crankRev, crankTime;
+    
+    // Parse wheel data if present
+    if (flags & 0x01) {
+      wheelRev = data[offset] | (data[offset+1] << 8) | 
+                 (data[offset+2] << 16) | (data[offset+3] << 24);
+      wheelTime = data[offset+4] | (data[offset+5] << 8);
+      offset += 6;
+    }
+    
+    // Parse crank data if present
+    if (flags & 0x02) {
+      crankRev = data[offset] | (data[offset+1] << 8);
+      crankTime = data[offset+2] | (data[offset+3] << 8);
+    }
+    
+    // Calculate speed (if wheel data present and we have previous data)
+    if ((flags & 0x01) && this.prevWheelTime !== null) {
+      let deltaRev = wheelRev - this.prevWheelRev;
+      let deltaTime = wheelTime - this.prevWheelTime;
+      
+      // Handle uint32 rollover for wheel revolutions
+      if (deltaRev < 0) deltaRev += 0x100000000;
+      
+      // Handle uint16 rollover for time (64 second period)
+      if (deltaTime < 0) deltaTime += 65536;
+      
+      if (deltaTime > 0) {
+        const wheelCircumference = 2.105; // meters (700x25c)
+        const timeSeconds = deltaTime / 1024;
+        const distanceMeters = deltaRev * wheelCircumference;
+        const speedKmh = (distanceMeters / timeSeconds) * 3.6;
+        console.log(`Speed: ${speedKmh.toFixed(2)} km/h`);
+      }
+    }
+    
+    // Calculate cadence (if crank data present and we have previous data)
+    if ((flags & 0x02) && this.prevCrankTime !== null) {
+      let deltaRev = crankRev - this.prevCrankRev;
+      let deltaTime = crankTime - this.prevCrankTime;
+      
+      // Handle uint16 rollover
+      if (deltaRev < 0) deltaRev += 65536;
+      if (deltaTime < 0) deltaTime += 65536;
+      
+      if (deltaTime > 0) {
+        const cadence = (deltaRev * 1024 * 60) / deltaTime;
+        console.log(`Cadence: ${cadence.toFixed(1)} RPM`);
+      }
+    }
+    
+    // Store current values for next iteration
+    if (flags & 0x01) {
+      this.prevWheelRev = wheelRev;
+      this.prevWheelTime = wheelTime;
+    }
+    if (flags & 0x02) {
+      this.prevCrankRev = crankRev;
+      this.prevCrankTime = crankTime;
+    }
+  }
+}
+```
+
+## Update Rate
+
+The CSC Measurement characteristic is notified on every update cycle (typically 100-200ms) when a client is subscribed.
+
+## Logging Format
+
+SmartSpin2k logs CSC notifications:
+
+```
+CSC(CSM)[ WheelRev(13615) WheelTime(1600) CrankRev(3399) CrankTime(672) ]
+```
+
+## DirCon Integration
+
+CSC measurements are not currently forwarded via DirCon TCP protocol (only FTMS, CPS, and custom characteristic are forwarded).
+
+## Implementation Notes
+
+- All multi-byte values use **little-endian** byte order
+- Both wheel and crank data flags are always set in SmartSpin2k's implementation
+- Revolution counters are uint32 (wheel) and uint16 (crank)
+- Event time counters are both uint16
+- Counters persist across connections but reset on device reboot
+- The service is always advertised
+
+## vs. Cycling Power Service
+
+Key differences between CSC and CPS:
+
+| Feature | CSC Service | Cycling Power Service |
+|---------|-------------|----------------------|
+| Service UUID | `0x1816` | `0x1818` |
+| Primary Data | Speed/Cadence | Power |
+| Wheel Time Resolution | 1/1024 s | 1/2048 s |
+| Crank Time Resolution | 1/1024 s | 1/1024 s |
+| Wheel Rev Data Type | uint32 | uint32 |
+| Crank Rev Data Type | uint16 | uint16 |
+| Power Data | No | Yes (sint16) |
+| Apps Need | Wheel circumference | Wheel circumference |
+
+<Note>
+  SmartSpin2k broadcasts **both** CSC and CPS services simultaneously. Apps typically subscribe to one or the other based on their needs.
+</Note>
+
+## Compatibility
+
+The Cycling Speed and Cadence Service is compatible with:
+
+- Zwift (uses for speed/cadence when not using FTMS)
+- Strava mobile app
+- Wahoo Fitness app
+- Garmin Connect mobile app  
+- Garmin head units
+- Wahoo head units
+- Sigma sport computers
+- Any app supporting standard BLE CSC service
+
+## Reference
+
+- [Cycling Speed and Cadence Service Specification v1.0](https://www.bluetooth.com/specifications/specs/cscs-1-0/)
+- Source: `BLE_Cycling_Speed_Cadence.cpp`
+- Definitions: `BLE_Definitions.h` (lines 298-362)

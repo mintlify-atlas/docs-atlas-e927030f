@@ -1,0 +1,685 @@
+---
+title: Firmware Development  
+description: Build SmartSpin2k firmware from source with PlatformIO
+---
+
+## Overview
+
+SmartSpin2k firmware is built using PlatformIO with the Arduino and ESP-IDF frameworks. This guide covers setting up your development environment and building from source.
+
+## Prerequisites
+
+### Required Software
+
+<Steps>
+  <Step title="Install Visual Studio Code">
+    Download and install from [code.visualstudio.com](https://code.visualstudio.com/)
+  </Step>
+
+  <Step title="Install PlatformIO IDE">
+    Install the PlatformIO extension from the VS Code marketplace:
+    - Open VS Code
+    - Go to Extensions (Ctrl+Shift+X)
+    - Search for "PlatformIO IDE"
+    - Click Install
+    
+    Official guide: [platformio.org/platformio-ide](https://platformio.org/platformio-ide)
+  </Step>
+
+  <Step title="Install Python">
+    Download Python 3.8+ from [python.org](https://www.python.org/downloads/)
+    
+    Verify installation:
+    ```bash
+    python --version
+    # or
+    python3 --version
+    ```
+  </Step>
+
+  <Step title="Install Pre-commit">
+    Install pre-commit for code quality checks:
+    ```bash
+    python -m pip install pre-commit
+    ```
+    
+    Add to PATH if warned during installation.
+  </Step>
+</Steps>
+
+### Hardware Requirements
+
+- **ESP32 Development Board**: ESP32-DOIT-DevKit-V1
+- **USB Cable**: Data-capable USB-A to Micro-USB
+- **Computer**: Windows, macOS, or Linux with 2GB+ free disk space
+
+## Repository Setup
+
+<Steps>
+  <Step title="Clone Repository">
+    ```bash
+    git clone https://github.com/doudar/SmartSpin2k.git
+    cd SmartSpin2k
+    ```
+  </Step>
+
+  <Step title="Install Git Hooks">
+    Install pre-commit hooks for automatic code quality checks:
+    ```bash
+    pre-commit install --hook-type pre-push
+    ```
+    
+    These hooks run before pushing code to catch issues early.
+  </Step>
+
+  <Step title="Open in PlatformIO">
+    - Open VS Code
+    - File → Open Folder
+    - Select the SmartSpin2k directory
+    - PlatformIO will auto-detect the project
+  </Step>
+</Steps>
+
+## Build Configuration
+
+### PlatformIO Environments
+
+The project defines three build environments in `platformio.ini`:
+
+<CodeGroup>
+```ini Release Build (Default)
+[env:release]
+extends = esp32doit
+# Optimized production build
+```
+
+```ini Debug Build
+[env:debug]
+extends = esp32doit
+build_type = debug
+build_flags = ${esp32doit.build_flags} -D__DEBUG__=1
+debug_tool = esp-prog
+debug_init_break = tbreak setup
+check_tool = cppcheck
+check_severity = medium, high
+```
+
+```ini Native Testing
+[env:native]
+platform = native
+lib_deps = ArduinoFake
+# For running tests on host machine
+```
+</CodeGroup>
+
+### Base Configuration
+
+```ini
+[esp32doit]
+platform = https://github.com/pioarduino/platform-espressif32/releases/download/54.03.21-2/platform-espressif32.zip
+board = esp32doit-devkit-v1
+framework = arduino, espidf
+board_build.partitions = min_spiffs.csv
+board_build.filesystem = littlefs
+upload_speed = 921600
+monitor_speed = 115200
+monitor_filters = esp32_exception_decoder
+```
+
+**Key Settings**:
+- **Platform**: Custom ESP32 platform with Arduino + ESP-IDF
+- **Partitions**: `min_spiffs.csv` for OTA + LittleFS
+- **Filesystem**: LittleFS for configuration storage
+- **Upload Speed**: 921600 baud for fast flashing
+- **Monitor**: 115200 baud with exception decoder
+
+### Build Flags
+
+```ini
+build_flags =
+    !python git_tag_macro.py
+    !python build_date_macro.py
+    !python cert_updater.py
+    -D ARDUINO_SERIAL_EVENT_TASK_STACK_SIZE=3500
+    -std=gnu++17
+```
+
+**Build Scripts**:
+- `git_tag_macro.py`: Injects git tag as firmware version
+- `build_date_macro.py`: Adds build timestamp
+- `cert_updater.py`: Updates SSL certificates for OTA
+
+### Dependencies
+
+```ini
+lib_deps = 
+    https://github.com/doudar/esp-nimble-cpp/
+    https://github.com/teemuatlut/TMCStepper/archive/refs/tags/v0.7.3.zip
+    https://github.com/bblanchon/ArduinoJson/archive/refs/tags/v7.3.1.zip
+    https://github.com/doudar/FastAccelStepper/
+    https://github.com/doudar/ArduinoWebsockets/
+```
+
+**Libraries Used**:
+- **esp-nimble-cpp**: BLE stack (NimBLE wrapper)
+- **TMCStepper**: Trinamic stepper driver control
+- **ArduinoJson**: JSON parsing (v7.3.1)
+- **FastAccelStepper**: High-performance stepper control
+- **ArduinoWebsockets**: WebSocket server for logging
+
+## Building Firmware
+
+### Via PlatformIO IDE
+
+<Steps>
+  <Step title="Select Environment">
+    Click the PlatformIO icon in the sidebar, then:
+    - Expand "Project Tasks"
+    - Choose environment: `release`, `debug`, or `native`
+  </Step>
+
+  <Step title="Build">
+    Click "Build" under your selected environment.
+    
+    Or use the toolbar shortcut: ✓ (checkmark icon)
+    
+    Output appears in the terminal showing:
+    - Dependency downloads
+    - Compilation progress
+    - Build size summary
+  </Step>
+
+  <Step title="Upload">
+    With ESP32 connected via USB:
+    - Click "Upload" in PlatformIO tasks
+    - Or use toolbar: → (arrow icon)
+    
+    Monitor auto-detects serial port and flashes firmware.
+  </Step>
+
+  <Step title="Monitor Serial">
+    Click "Monitor" to open serial console at 115200 baud.
+    
+    Or use toolbar: 🔌 (plug icon)
+  </Step>
+</Steps>
+
+### Via Command Line
+
+<CodeGroup>
+```bash Build Release
+cd SmartSpin2k
+pio run -e release
+
+# Output: .pio/build/release/firmware.bin
+```
+
+```bash Build and Upload
+pio run -e release --target upload
+
+# Automatically detects port and flashes
+```
+
+```bash Build Debug Version
+pio run -e debug
+
+# Includes debug symbols and __DEBUG__ flag
+```
+
+```bash Clean Build
+pio run -e release --target clean
+pio run -e release
+
+# Full rebuild from scratch
+```
+
+```bash Monitor Serial
+pio device monitor --baud 115200 --filter esp32_exception_decoder
+
+# Opens serial monitor with stack trace decoder
+```
+</CodeGroup>
+
+### Manual Port Selection
+
+If auto-detection fails:
+
+```bash
+# List available ports
+pio device list
+
+# Upload to specific port
+pio run -e release --target upload --upload-port /dev/ttyUSB0
+
+# Monitor specific port  
+pio device monitor --port /dev/ttyUSB0 --baud 115200
+```
+
+## Project Structure
+
+```
+SmartSpin2k/
+├── platformio.ini           # Build configuration
+├── src/
+│   ├── Main.cpp            # Entry point, setup(), loop()
+│   ├── HTTP_Server_Basic.cpp  # Web server & OTA
+│   ├── BLE_Server.cpp      # BLE GATT server
+│   ├── BLE_Client.cpp      # BLE client (connects to sensors)
+│   ├── BLE_Firmware_Update.cpp # BLE OTA handler
+│   ├── ERG_Mode.cpp        # ERG mode controller
+│   ├── Power_Table.cpp     # Power calibration table
+│   └── ...
+├── include/
+│   ├── settings.h          # Configuration constants
+│   ├── SmartSpin_parameters.h # User/runtime parameters
+│   ├── Main.h              # Global declarations
+│   ├── boards.h            # Hardware revision definitions
+│   └── ...
+├── lib/
+│   ├── SS2K/               # Core library
+│   │   ├── include/
+│   │   │   ├── sensors/    # BLE sensor data parsers
+│   │   │   └── Constants.h # BLE UUIDs and constants
+│   │   └── src/
+│   └── ArduinoCompat/      # Compatibility layer for native tests
+├── test/                   # Unit tests
+│   ├── test_PowerTable.cpp
+│   └── ...
+├── data/                   # Web interface files (uploaded to LittleFS)
+│   ├── index.html
+│   ├── settings.html
+│   └── ...
+├── Hardware/               # PCB designs and 3D models
+└── Pictures/               # Documentation images
+```
+
+## Key Source Files
+
+### Core Firmware
+
+| File | Purpose |
+|------|----------|
+| `src/Main.cpp` | Initialization, task management, stepper control loop |
+| `src/HTTP_Server_Basic.cpp` | Web server, HTTP OTA updates, WiFi management |
+| `src/BLE_Fitness_Machine_Service.cpp` | FTMS server for Zwift/TrainerRoad |
+| `src/ERG_Mode.cpp` | Automatic resistance control algorithm |
+| `src/Power_Table.cpp` | Power calibration storage and lookup |
+
+### Configuration
+
+| File | Purpose |
+|------|----------|
+| `include/settings.h` | Hardware pins, default values, feature flags |
+| `include/SmartSpin_parameters.h` | User settings class definition |
+| `src/SmartSpin_parameters.cpp` | Settings save/load from LittleFS |
+
+### BLE Services
+
+| File | Purpose |
+|------|----------|
+| `src/BLE_Server.cpp` | BLE server initialization and callbacks |
+| `src/BLE_Cycling_Power_Service.cpp` | Cycling Power Service (CPS) |
+| `src/BLE_Cycling_Speed_Cadence.cpp` | CSC Service |
+| `src/BLE_Heart_Service.cpp` | Heart Rate Service |
+| `src/BLE_Client.cpp` | Connect to external BLE sensors |
+
+## Customizing Firmware
+
+### Modify Default Settings
+
+Edit `include/settings.h`:
+
+```cpp
+// Change default device name
+const char* const DEVICE_NAME = "MyBike";
+
+// Adjust stepper defaults
+#define DEFAULT_STEPPER_POWER 1000  // Increase power
+#define DEFAULT_SHIFT_STEP 1500     // Larger shifts
+
+// Disable auto-update
+#define AUTO_FIRMWARE_UPDATE false
+```
+
+### Enable Debug Features
+
+Uncomment debug flags:
+
+```cpp
+// include/settings.h
+#define DEBUG_STACK           // Monitor task stack usage
+#define DEBUG_POWERTABLE      // Log power table operations  
+#define DEBUG_BLE_TX_RX       // Trace BLE communications
+```
+
+Rebuild and monitor serial output for detailed logs.
+
+### Add Custom Logging
+
+Use the SS2K logging system:
+
+```cpp
+#include "SS2KLog.h"
+
+#define MY_LOG_TAG "MyFeature"
+
+void myFunction() {
+  SS2K_LOG(MY_LOG_TAG, "Function called with value: %d", someValue);
+  SS2K_LOG(MY_LOG_TAG, "Error occurred");
+}
+```
+
+Logs appear on:
+- Serial monitor (always)
+- UDP (if enabled)
+- WebSocket (if clients connected)
+- BLE characteristic (if enabled)
+
+### Modify Pin Assignments
+
+For custom hardware, edit `include/boards.h`:
+
+```cpp
+// Add custom board revision
+#define r3_NAME "Revision Three"
+#define r3_VERSION_VOLTAGE 2048  // Voltage on pin 34
+#define r3_SHIFT_UP_PIN 21
+#define r3_SHIFT_DOWN_PIN 22
+// ... more pins
+```
+
+Update detection logic in `src/Main.cpp`.
+
+## Testing
+
+### Unit Tests
+
+Run native tests on your computer:
+
+```bash
+# Build and run all tests
+pio test -e native
+
+# Run specific test
+pio test -e native -f test_PowerTable
+
+# Verbose output
+pio test -e native -v
+```
+
+Tests use ArduinoFake to mock Arduino functions.
+
+### Code Quality
+
+The debug environment includes cppcheck:
+
+```bash
+pio check -e debug
+```
+
+Pre-commit hooks run automatically before git push to catch:
+- Syntax errors
+- Memory issues  
+- Code style violations
+
+### Hardware Testing
+
+<Steps>
+  <Step title="Serial Monitor Tests">
+    Monitor output during boot:
+    ```bash
+    pio device monitor --baud 115200 --filter esp32_exception_decoder
+    ```
+    
+    Verify:
+    - Board revision detected correctly
+    - LittleFS mounted
+    - WiFi connects
+    - BLE advertising starts
+  </Step>
+
+  <Step title="Stepper Tests">
+    Use web interface to:
+    - Test shift up/down buttons
+    - Verify motor direction
+    - Check homing functionality
+    - Validate position limits
+  </Step>
+
+  <Step title="BLE Tests">
+    Connect with apps:
+    - Zwift (FTMS trainer)
+    - Heart rate monitor (HRM service)
+    - Power meter (CPS service)
+    - Companion app (BLE OTA)
+  </Step>
+</Steps>
+
+## Advanced Development
+
+### Task Stack Sizes
+
+Monitor and adjust task stacks:
+
+```cpp
+// include/settings.h
+#define MAIN_STACK       4500
+#define BLE_CLIENT_STACK 6000
+
+// Enable stack monitoring
+#define DEBUG_STACK
+```
+
+Watch serial output for high water marks.
+
+### Memory Optimization
+
+The ESP32 has limited RAM. Key memory consumers:
+
+```cpp
+// Power table size (adjustable)
+#define POWERTABLE_WATT_SIZE 30
+#define POWERTABLE_CAD_SIZE 10
+
+// JSON buffer sizes
+#define USERCONFIG_JSON_SIZE 2000 + DEBUG_LOG_BUFFER_SIZE
+#define DEBUG_LOG_BUFFER_SIZE 600
+
+// BLE buffer size for Peloton
+#define AUX_BUF_SIZE 10
+```
+
+Reduce if you encounter memory errors.
+
+### Custom BLE Services
+
+Add new BLE characteristics:
+
+```cpp
+// In BLE_Server.cpp
+void setupCustomService(NimBLEServer *pServer) {
+  NimBLEService *pService = pServer->createService("custom-uuid");
+  
+  NimBLECharacteristic *pChar = pService->createCharacteristic(
+    "char-uuid",
+    NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY
+  );
+  
+  pChar->setValue("initial value");
+  pService->start();
+  pServer->getAdvertising()->addServiceUUID(pService->getUUID());
+}
+```
+
+Call from `setupBLE()` in Main.cpp.
+
+## Debugging
+
+### Serial Debugging
+
+Monitor with exception decoder:
+
+```bash
+pio device monitor --baud 115200 --filter esp32_exception_decoder
+```
+
+When crashes occur, the decoder translates stack traces:
+
+```
+Guru Meditation Error: Core 1 panic'ed (LoadProhibited)
+...
+Backtrace: 0x400d1234:0x3ffb5678 0x400d5678:0x3ffb1234
+  ↓ decoded to:
+  myFunction() at src/Main.cpp:123
+  setup() at src/Main.cpp:67
+```
+
+### Hardware Debugging
+
+For JTAG debugging:
+
+```ini
+[env:debug]
+debug_tool = esp-prog
+debug_init_break = tbreak setup
+```
+
+Requires ESP-Prog or similar JTAG adapter.
+
+### Remote Logging
+
+Enable UDP logging to send logs over network:
+
+```cpp
+// Via web interface:
+// Settings → UDP Logging → Enable
+// Enter destination IP and port
+
+// Receive logs:
+netcat -lu 192.168.1.100 8888
+```
+
+## Building for Distribution
+
+### Release Build
+
+<Steps>
+  <Step title="Clean Environment">
+    ```bash
+    pio run -e release --target clean
+    ```
+  </Step>
+
+  <Step title="Update Version">
+    Ensure git tag reflects version:
+    ```bash
+    git tag -a v1.19.0 -m "Release v1.19.0"
+    ```
+    
+    Build script reads this tag for FIRMWARE_VERSION.
+  </Step>
+
+  <Step title="Build Firmware">
+    ```bash
+    pio run -e release
+    ```
+    
+    Output: `.pio/build/release/firmware.bin`
+  </Step>
+
+  <Step title="Build Filesystem">
+    Package web interface files:
+    ```bash
+    pio run -e release --target buildfs
+    ```
+    
+    Output: `.pio/build/release/littlefs.bin`
+  </Step>
+
+  <Step title="Test Binary">
+    Flash to test device:
+    ```bash
+    esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 \
+      write_flash -z 0x10000 .pio/build/release/firmware.bin
+    ```
+    
+    Verify all functionality works.
+  </Step>
+
+  <Step title="Distribute">
+    Upload to GitHub releases or OTA server:
+    - `firmware.bin`: Main firmware
+    - `version.txt`: Version string
+    - `list.json`: Web file manifest
+    - Individual web files
+  </Step>
+</Steps>
+
+### Continuous Integration
+
+Use GitHub Actions for automated builds:
+
+```yaml
+name: Build Firmware
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install PlatformIO
+        run: pip install platformio
+      - name: Build firmware
+        run: pio run -e release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: firmware
+          path: .pio/build/release/firmware.bin
+```
+
+## Contributing
+
+When contributing to SmartSpin2k:
+
+1. **Fork** the repository
+2. **Create branch** for your feature
+3. **Make changes** following code style
+4. **Run pre-commit**: `pre-commit run --all-files`
+5. **Test thoroughly** on hardware
+6. **Submit pull request** with description
+
+See [Contributing Guide](https://github.com/doudar/SmartSpin2k/wiki) for more details.
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="SmartSpin2k GitHub" icon="github" href="https://github.com/doudar/SmartSpin2k">
+    Source code and issue tracker
+  </Card>
+  <Card title="PlatformIO Docs" icon="book" href="https://docs.platformio.org">
+    PlatformIO documentation
+  </Card>
+  <Card title="ESP32 API Reference" icon="microchip" href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/index.html">
+    ESP-IDF API documentation
+  </Card>
+  <Card title="SmartSpin2k Wiki" icon="book-open" href="https://github.com/doudar/SmartSpin2k/wiki">
+    Community documentation and guides
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/firmware/installation">
+    Flash your custom firmware to ESP32
+  </Card>
+  <Card title="Configuration" icon="gear" href="/firmware/configuration">
+    Configure your customized build
+  </Card>
+</CardGroup>

@@ -1,0 +1,579 @@
+---
+title: 'Web Configuration Interface'
+description: 'Configure and monitor SmartSpin2k through the built-in web interface'
+icon: 'browser'
+---
+
+## Accessing the Web Interface
+
+SmartSpin2k includes a built-in web server that provides a comprehensive configuration and monitoring interface.
+
+### Connection Methods
+
+<Tabs>
+  <Tab title="mDNS (Recommended)">
+    If your device supports mDNS (most modern computers, phones, and tablets):
+    
+    **URL**: `http://smartspin2k.local`
+    
+    Open a web browser and navigate to this address. The interface should load automatically.
+    
+    <Note>
+      If you've changed the device name in settings, use `http://[your-device-name].local` instead.
+    </Note>
+  </Tab>
+  
+  <Tab title="IP Address">
+    If mDNS doesn't work, you can connect via IP address:
+    
+    <Steps>
+      <Step title="Find the IP address">
+        Check your router's DHCP client list or connected devices page.
+        
+        Look for a device named "SmartSpin2k" or "ESP32".
+      </Step>
+      
+      <Step title="Navigate to IP">
+        Enter the IP address in your browser: `http://192.168.1.XXX`
+        
+        (Replace XXX with your device's actual IP)
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Access Point Mode">
+    If SmartSpin2k can't connect to WiFi, it creates its own access point:
+    
+    <Steps>
+      <Step title="Look for WiFi network">
+        On your phone or computer, search for a WiFi network named **"SmartSpin2k"** or your configured SSID.
+      </Step>
+      
+      <Step title="Connect to network">
+        Join the SmartSpin2k WiFi network using the password configured in settings (or the default password).
+      </Step>
+      
+      <Step title="Open web interface">
+        Navigate to `http://192.168.4.1` in your browser.
+      </Step>
+      
+      <Step title="Configure WiFi">
+        Use the Settings page to enter your home WiFi credentials.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+<Tip>
+  Bookmark the web interface URL for easy access during workouts.
+</Tip>
+
+## Web Interface Pages
+
+The SmartSpin2k web interface consists of several pages, each serving a specific purpose:
+
+### Main Menu (index.html)
+
+The landing page provides quick access to all features:
+
+```html
+<!-- From data/index.html -->
+<div class="dev-tools-grid">
+  <a href="shift.html">Web Shifter</a>
+  <a href="settings.html">Settings</a>
+  <a href="bluetoothscanner.html">Bluetooth Scanner</a>
+  <a href="develop.html">Developer Tools</a>
+  <a href="status.html">Status</a>
+</div>
+```
+
+<CardGroup cols={2}>
+  <Card title="Web Shifter" icon="gear" href="#web-shifter">
+    Manual resistance control during rides
+  </Card>
+  
+  <Card title="Settings" icon="sliders" href="#settings-page">
+    Configure device parameters and preferences
+  </Card>
+  
+  <Card title="Bluetooth Scanner" icon="bluetooth" href="#bluetooth-scanner">
+    Scan for and connect BLE devices
+  </Card>
+  
+  <Card title="Developer Tools" icon="code" href="#developer-tools">
+    Advanced diagnostics and debugging
+  </Card>
+  
+  <Card title="Status" icon="chart-line" href="#status-page">
+    Real-time monitoring and metrics
+  </Card>
+</CardGroup>
+
+### Web Shifter
+
+**URL**: `http://smartspin2k.local/shift.html`
+
+Manually control resistance during your ride:
+
+<AccordionGroup>
+  <Accordion title="Shift Up / Down" icon="arrows-up-down">
+    Click the **▲ Shift Up** or **▼ Shift Down** buttons to adjust resistance by the configured shift step amount.
+    
+    **Default shift step**: 1200 steps (~30 watts)
+    
+    Adjustable in: Settings > Shift Amount
+  </Accordion>
+  
+  <Accordion title="Direct Position Control" icon="bullseye">
+    Enter a specific stepper position and click "Go to Position" to move to that exact resistance level.
+    
+    Useful for:
+    - Testing stepper range
+    - Finding optimal positions
+    - Manual calibration
+  </Accordion>
+  
+  <Accordion title="Real-time Feedback" icon="gauge">
+    The page displays:
+    - Current stepper position
+    - Current power output
+    - Current cadence
+    - Current heart rate (if HRM connected)
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Using the Web Shifter during a training app session (Zwift, TrainerRoad) may conflict with the app's resistance control. Use only when manually controlling your workout.
+</Warning>
+
+### Settings Page
+
+**URL**: `http://smartspin2k.local/settings.html`
+
+Comprehensive configuration interface for all SmartSpin2k parameters:
+
+<Tabs>
+  <Tab title="Network Settings">
+    #### WiFi Configuration
+    
+    **SSID**: Network name to connect to (or create if not found)
+    
+    **Password**: WiFi password
+    
+    **Device Name**: mDNS hostname (default: "SmartSpin2k")
+    
+    <Note>
+      Changing the device name requires a reboot. The new URL will be `http://[new-name].local`
+    </Note>
+  </Tab>
+  
+  <Tab title="Resistance Settings">
+    #### Resistance & Power Configuration
+    
+    **Shift Amount** (10-6000, default: 1200)
+    - Stepper steps per gear shift
+    - Higher values = larger resistance changes
+    - Target ~30W per shift for most bikes
+    
+    **Power Multiplier** (0.10x-2.10x, default: 1.00x)
+    - Calibration factor for power meter output
+    - See [Power Calibration](/usage/power-calibration)
+    
+    **Incline Multiplier** (1-10x, default: 5x)
+    - Sensitivity for simulation mode hills
+    - Higher = more aggressive incline changes
+    
+    **Min Brake Watts** (0-200W, default: 0W)
+    - Minimum power threshold
+    - 0 = disabled
+    
+    **Max Brake Watts** (0-2000W, default: 0W)
+    - Maximum expected power output
+    - 0 = disabled
+  </Tab>
+  
+  <Tab title="ERG Mode Settings">
+    #### ERG Mode Configuration
+    
+    **ERG Sensitivity** (0.1-20, default: 1.0)
+    - Response aggressiveness for ERG mode
+    - Lower = gentler adjustments
+    - Higher = faster corrections
+    - See [ERG Mode](/usage/erg-mode)
+    
+    **PowerTable For Power** (toggle, default: OFF)
+    - Use power table instead of power meter
+    - Only enable if you don't have a power meter
+    - See [Power Calibration](/usage/power-calibration)
+  </Tab>
+  
+  <Tab title="Hardware Settings">
+    #### Stepper Motor Configuration
+    
+    **Stepper Motor Power** (100-2000ma, default: varies)
+    - Current supplied to stepper motor
+    - Set to minimum required for smooth operation
+    - Too high = motor overheating
+    - Too low = missed steps
+    
+    **Stepper StealthChop** (toggle, default: OFF)
+    - Enable silent stepper operation
+    - Reduces noise at the cost of torque
+    - Recommended for quiet environments
+    
+    **Stepper Motor Direction** (toggle, default: OFF)
+    - Reverse stepper rotation direction
+    - Change if resistance increases when it should decrease
+    
+    **Shifter Direction** (toggle, default: OFF)
+    - Reverse shifter button input
+    - Swap if shift up/down buttons are reversed
+  </Tab>
+  
+  <Tab title="Advanced Settings">
+    #### Advanced Options
+    
+    **Automatic Updates** (toggle, default: OFF)
+    - Check for firmware updates on boot
+    - Requires internet connection
+    - Updates downloaded from GitHub releases
+    
+    **UDP Logging** (toggle, default: OFF)
+    - Send log messages via UDP on port 10000
+    - For debugging and diagnostics
+    - Requires UDP listener on your network
+  </Tab>
+</Tabs>
+
+#### Settings Auto-Save
+
+Settings are automatically saved 300ms after you stop adjusting a slider or toggle:
+
+```javascript
+// From settings.html:370-394
+function sendSetting(element) {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    fetch('/send_settings?' + params.toString())
+      .then(() => showSaveStatus('Settings saved', 'success'))
+      .catch(error => showSaveStatus('Failed to save', 'error'));
+  }, 300);
+}
+```
+
+<Tip>
+  You'll see a "Settings saved" confirmation message when changes are persisted to the device.
+</Tip>
+
+#### Reset to Defaults
+
+At the bottom of the Settings page, you can reset all settings to factory defaults:
+
+<Warning>
+  Resetting to defaults will erase all custom configuration. This action cannot be undone.
+</Warning>
+
+### Bluetooth Scanner
+
+**URL**: `http://smartspin2k.local/bluetoothscanner.html`
+
+Scan for and connect Bluetooth Low Energy devices:
+
+<Steps>
+  <Step title="Start scan">
+    Click the "Scan for Devices" button to begin searching for nearby BLE devices.
+  </Step>
+  
+  <Step title="View discovered devices">
+    The page displays all discovered devices with:
+    - Device name
+    - MAC address
+    - Signal strength (RSSI)
+    - Services advertised
+  </Step>
+  
+  <Step title="Connect to device">
+    Click on a device to connect it to SmartSpin2k.
+    
+    Supported device types:
+    - Power meters (Cycling Power Service)
+    - Heart rate monitors (Heart Rate Service)
+    - Cadence sensors (CSC Service)
+    - Remote controls (HID Service)
+    - Other trainers (Fitness Machine Service)
+  </Step>
+  
+  <Step title="Verify connection">
+    Connected devices appear with a "Connected" status indicator.
+    
+    Check the Status page to see real-time data from connected devices.
+  </Step>
+</Steps>
+
+<Note>
+  SmartSpin2k can connect to multiple BLE devices simultaneously: one power meter, one heart rate monitor, one cadence sensor, and one remote control.
+</Note>
+
+### Status Page
+
+**URL**: `http://smartspin2k.local/status.html`
+
+Real-time monitoring dashboard showing:
+
+<CardGroup cols={2}>
+  <Card title="Power Metrics" icon="bolt">
+    - Current power (watts)
+    - Target power (ERG mode)
+    - Power source (meter or simulated)
+  </Card>
+  
+  <Card title="Cadence & Speed" icon="rotate">
+    - Current cadence (RPM)
+    - Calculated speed (km/h or mph)
+    - Wheel/crank revolutions
+  </Card>
+  
+  <Card title="Heart Rate" icon="heart">
+    - Current heart rate (BPM)
+    - HR source (connected monitor)
+  </Card>
+  
+  <Card title="Resistance" icon="slider">
+    - Current stepper position
+    - Target position
+    - Resistance percentage (0-100%)
+  </Card>
+  
+  <Card title="Connection Status" icon="signal">
+    - BLE server status
+    - Connected training app
+    - Connected sensors
+  </Card>
+  
+  <Card title="System Info" icon="microchip">
+    - Firmware version
+    - WiFi SSID and signal
+    - Uptime
+    - Free memory
+  </Card>
+</CardGroup>
+
+The Status page auto-refreshes every 1-2 seconds to display live data.
+
+### Developer Tools
+
+**URL**: `http://smartspin2k.local/develop.html`
+
+Advanced diagnostics and debugging interface:
+
+<AccordionGroup>
+  <Accordion title="Console Log" icon="terminal">
+    Real-time log output from SmartSpin2k firmware.
+    
+    Shows:
+    - BLE connection events
+    - ERG mode calculations
+    - Power table updates
+    - Error messages
+    - Debug information
+    
+    <Tip>
+      Enable "UDP Logging" in Settings to stream logs to a UDP listener on port 10000.
+    </Tip>
+  </Accordion>
+  
+  <Accordion title="System Commands" icon="terminal">
+    Execute system-level commands:
+    
+    - **Reboot Device**: Restart SmartSpin2k
+    - **Reset Power Table**: Clear power table data
+    - **Factory Reset**: Restore all settings to defaults
+    - **Update Firmware**: Check for and install updates
+  </Accordion>
+  
+  <Accordion title="BLE Simulator" icon="vial">
+    Test BLE functionality without a training app:
+    
+    - Send FTMS control commands
+    - Simulate power meter data
+    - Test ERG mode responses
+    - Verify service characteristics
+    
+    Useful for:
+    - Testing new features
+    - Debugging BLE issues
+    - Validating calibration
+  </Accordion>
+  
+  <Accordion title="File System Browser" icon="folder">
+    View and manage files on SmartSpin2k's LittleFS filesystem:
+    
+    - `/PowerTable.txt` - Power table data
+    - `/config.txt` - User configuration
+    - `/wifi.txt` - WiFi credentials
+    - Log files
+    
+    <Warning>
+      Modifying or deleting system files can cause SmartSpin2k to malfunction. Only advanced users should use this feature.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## Configuration API Endpoints
+
+For advanced users and integrators, SmartSpin2k exposes several HTTP API endpoints:
+
+### GET /configJSON
+
+Retrieve current configuration as JSON:
+
+```bash
+curl http://smartspin2k.local/configJSON
+```
+
+**Response**:
+```json
+{
+  "ssid": "MyWiFi",
+  "deviceName": "SmartSpin2k",
+  "firmwareVersion": "v3.2.0",
+  "shiftStep": 1200,
+  "powerCorrectionFactor": 1.00,
+  "inclineMultiplier": 5,
+  "ERGSensitivity": 1.0,
+  "minWatts": 0,
+  "maxWatts": 0,
+  "stepperPower": 800,
+  "stealthChop": false,
+  "autoUpdate": false,
+  "stepperDir": false,
+  "shifterDir": false,
+  "udpLogEnabled": false,
+  "pTab4Pwr": false
+}
+```
+
+### GET /send_settings
+
+Update configuration parameters:
+
+```bash
+curl "http://smartspin2k.local/send_settings?powerCorrectionFactor=0.95&ERGSensitivity=1.5"
+```
+
+**Query parameters**: Any setting from `configJSON`
+
+**Response**: `200 OK` on success
+
+### GET /load_defaults.html
+
+Reset all settings to defaults:
+
+```bash
+curl http://smartspin2k.local/load_defaults.html
+```
+
+<Warning>
+  This endpoint immediately resets all configuration to factory defaults without confirmation.
+</Warning>
+
+### GET /reboot.html
+
+Reboot the device:
+
+```bash
+curl http://smartspin2k.local/reboot.html
+```
+
+## Mobile Responsiveness
+
+The web interface is fully responsive and optimized for mobile devices:
+
+- **Touch-friendly controls**: Large buttons and sliders
+- **Adaptive layout**: Automatically adjusts to screen size
+- **Landscape support**: Works in both portrait and landscape orientations
+- **Fast loading**: Minimal JavaScript and CSS for quick page loads
+
+<Tip>
+  For the best mobile experience, add the web interface to your home screen:
+  
+  **iOS**: Safari > Share > Add to Home Screen
+  
+  **Android**: Chrome > Menu > Add to Home Screen
+</Tip>
+
+## Troubleshooting Web Interface Issues
+
+### Can't access web interface
+
+<AccordionGroup>
+  <Accordion title="Check WiFi connection">
+    Ensure your device and SmartSpin2k are on the same WiFi network.
+    
+    Check your device's WiFi settings to confirm.
+  </Accordion>
+  
+  <Accordion title="Try IP address instead of mDNS">
+    Some networks block mDNS. Use the IP address instead of `smartspin2k.local`.
+    
+    Find the IP address in your router's DHCP client list.
+  </Accordion>
+  
+  <Accordion title="Disable VPN">
+    VPNs can interfere with local network access. Temporarily disable your VPN and try again.
+  </Accordion>
+  
+  <Accordion title="Check firewall">
+    Ensure your firewall isn't blocking local HTTP connections (port 80).
+  </Accordion>
+  
+  <Accordion title="Connect via Access Point">
+    If all else fails, connect directly to SmartSpin2k's WiFi access point.
+    
+    See "Access Point Mode" tab above.
+  </Accordion>
+</AccordionGroup>
+
+### Settings not saving
+
+- **Check connection**: Ensure stable WiFi connection
+- **Wait for confirmation**: Look for "Settings saved" message
+- **Reboot device**: Settings may require a reboot to take effect
+- **Check free space**: Ensure device has sufficient filesystem space
+
+### Page loads slowly
+
+- **Signal strength**: Move closer to WiFi router or SmartSpin2k
+- **Network congestion**: Disconnect other devices or use 5GHz WiFi
+- **Browser cache**: Clear browser cache and reload
+- **Reboot router**: Restart your WiFi router
+
+### Real-time data not updating
+
+- **Refresh page**: Manually refresh the Status page
+- **Check BLE connections**: Ensure sensors are connected (Bluetooth Scanner page)
+- **Verify WebSocket**: Some pages use WebSockets for real-time updates; check browser console for errors
+- **Reboot SmartSpin2k**: Restart the device if data appears stale
+
+## Security Considerations
+
+<Warning>
+  The SmartSpin2k web interface does not have authentication. Anyone on your local network can access and modify settings.
+</Warning>
+
+**Best practices**:
+- Use a secure WiFi password
+- Don't expose SmartSpin2k to the internet (no port forwarding)
+- Connect only to trusted networks
+- Consider a separate IoT network for smart devices
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="Mobile App" icon="mobile" href="/usage/mobile-app">
+    Use the companion mobile app for iOS and Android
+  </Card>
+  <Card title="Power Calibration" icon="sliders" href="/usage/power-calibration">
+    Calibrate settings via the web interface
+  </Card>
+</CardGroup>

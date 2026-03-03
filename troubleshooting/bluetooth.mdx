@@ -1,0 +1,366 @@
+---
+title: 'Bluetooth Connectivity'
+description: 'Troubleshooting BLE connection issues with sensors and apps'
+icon: 'bluetooth'
+---
+
+## BLE Connection Overview
+
+SmartSpin2k uses BLE (Bluetooth Low Energy) to communicate with:
+- **Training apps** (Zwift, TrainerRoad, etc.) - as a server
+- **Sensors** (power meters, heart rate monitors, cadence sensors) - as a client
+- **Remotes** (BLE shifters, ANT+ controllers)
+
+### Supported BLE Services
+
+SmartSpin2k supports the following BLE service types:
+
+- **Cycling Power Service** (0x1818) - Power meters
+- **Cycling Speed & Cadence** (0x1816) - Speed/cadence sensors  
+- **Heart Rate Service** (0x180D) - Heart rate monitors
+- **Fitness Machine Service** (0x1826) - Smart trainers
+- **Echelon Service** - Echelon bike integration
+- **Flywheel UART** - Flywheel bike integration
+- **HID Service** - BLE shifter remotes
+
+## Common BLE Issues
+
+<AccordionGroup>
+  <Accordion title="Cannot find SmartSpin2k in Zwift/TrainerRoad">
+    **Symptoms:** Training app doesn't see SmartSpin2k device.
+
+    **Troubleshooting:**
+    
+    1. **Check device name**: Default is "SmartSpin2k" (can be changed in settings)
+    2. **BLE Server running**: Server starts automatically on boot
+    3. **Range**: Keep phone/computer within 10-15 feet of device
+    4. **BLE not WiFi**: Device advertises over Bluetooth, not WiFi
+    5. **Multiple connections**: SmartSpin2k can handle multiple client connections
+    6. **Restart BLE**: Reboot SmartSpin2k to reinitialize BLE stack
+
+    **Check advertising:**
+    
+    - Device advertises as Cycling Power Service (primary)
+    - Also advertises Fitness Machine Service
+    - Device Information Service provides firmware version
+
+    <Tip>
+      Use a BLE scanner app (like nRF Connect) to verify SmartSpin2k is advertising.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Power meter won't connect">
+    **Symptoms:** External power meter not connecting to SmartSpin2k.
+
+    **Requirements:**
+    
+    - Power meter must advertise Cycling Power Service (0x1818)
+    - Device must be in range and powered on
+    - Connection slot available (max 3 devices: NUM_BLE_DEVICES)
+
+    **Steps to connect:**
+    
+    1. **Configure device name**: Set "connectedPowerMeter" in settings
+       - Use exact device name (case-sensitive)
+       - Or use "any" to connect to first available power meter
+       - Use "none" to disable power meter connection
+    2. **Trigger scan**: 
+       - Scan runs on boot if `doScan` is true
+       - Hold both shifters for 2 loops to manually trigger scan
+       - Auto-reconnect scans every 6 seconds (BLE_RECONNECT_SCAN_INTERVAL)
+    3. **Check logs**: Monitor BLE_Client logs for connection attempts
+
+    **Connection parameters:**
+    
+    - Min interval: 24 (30ms)
+    - Max interval: 48 (60ms)  
+    - Latency: 0 packets
+    - Timeout: 200 (2000ms)
+
+    <Warning>
+      If multiple devices advertise the same name, SmartSpin2k will connect to the strongest signal.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Heart rate monitor disconnecting">
+    **Symptoms:** HRM connects but frequently drops.
+
+    **Common causes:**
+    
+    1. **Timeout detection**: If no data received for 5 seconds (BLE_CLIENT_DISCONNECT_TIMEOUT), client is disconnected
+    2. **Range issues**: HRM too far from SmartSpin2k
+    3. **Battery low**: Weak signal from dying battery
+    4. **Multiple connections**: HRM connected to another device simultaneously
+
+    **Solutions:**
+    
+    - Keep HRM within 6 feet of SmartSpin2k
+    - Replace HRM battery
+    - Disconnect HRM from other devices
+    - Check for firmware updates
+    - Try setting connectedHeartMonitor to device's exact name
+
+    **Auto-reconnect:**
+    
+    SmartSpin2k automatically attempts to reconnect every 6 seconds if:
+    - Device was previously connected
+    - Device is still in foundDevices list
+    - Scan detects the device advertising
+  </Accordion>
+
+  <Accordion title="BLE scan not finding devices">
+    **Symptoms:** Manual scan doesn't detect BLE sensors.
+
+    **Scan configuration:**
+    
+    - Scan interval: 49 (30.625ms)
+    - Scan window: 33 (20.625ms)
+    - Active scanning: Enabled
+    - Duplicate filtering: Enabled
+    - Default duration: 4 seconds (DEFAULT_SCAN_DURATION)
+
+    **Troubleshooting:**
+    
+    1. **Sensor advertising**: Ensure sensor is awake and advertising
+       - Many sensors go to sleep when idle
+       - Spin cranks or trigger sensor to wake
+    2. **Supported services**: Device must advertise a supported service UUID
+    3. **BLE interference**: Move away from WiFi routers, microwaves
+    4. **Update in progress**: Scanning disabled during firmware updates
+    5. **Too many devices**: Can only connect to 3 BLE devices (NUM_BLE_DEVICES)
+
+    **Manual scan trigger:**
+    
+    Hold both shifter buttons during operation to initiate a scan (after SHIFTERS_HOLD_FOR_SCAN loops = 2).
+
+    <Tip>
+      The foundDevices list persists between scans. Check this list in configuration to see previously detected devices.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="BLE firmware update failing">
+    **Symptoms:** Cannot update firmware over BLE.
+
+    **During update:**
+    
+    - All connected devices are disconnected
+    - BLE scanning is stopped
+    - `isUpdating` flag set to true
+    - Regular BLE communications paused
+
+    **Troubleshooting:**
+    
+    1. **Stable connection**: Keep update source device close to SmartSpin2k
+    2. **Battery power**: Ensure adequate power supply during update
+    3. **Update timeout**: Don't interrupt update process
+    4. **Partition check**: Firmware validates OTA boot partition
+
+    <Warning>
+      Do not power off SmartSpin2k during firmware update. This can corrupt the firmware.
+    </Warning>
+
+    **Recovery:**
+    
+    If update fails:
+    - Device should revert to previous firmware
+    - Check logs for specific error messages
+    - May need to reflash via USB as a last resort
+  </Accordion>
+
+  <Accordion title="Connection priority issues">
+    **Symptoms:** Device connects to wrong sensor when multiple available.
+
+    **Connection logic:**
+    
+    SmartSpin2k prioritizes connections based on:
+    1. Exact name match in configuration
+    2. "any" setting connects to first matching service type
+    3. Signal strength (RSSI) when multiple matches
+    4. Previously connected devices (stored in foundDevices)
+
+    **Managing connections:**
+    
+    1. **Specific device names**: Set exact names for each sensor type:
+       - connectedPowerMeter
+       - connectedHeartMonitor  
+       - connectedRemote
+    2. **Unique names**: Use device-specific identifiers
+    3. **Randomized addresses**: Some devices use random MAC addresses
+       - SmartSpin2k uses `adevName2UniqueName()` for stable identification
+    4. **Disconnect others**: Use reconnectAllDevices() to force new connections
+
+    <Tip>
+      Setting device name to "none" disables connection for that sensor type.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Multiple device conflicts">
+    **Symptoms:** Can only connect 2 devices when 3 should be possible.
+
+    **Device limits:**
+    
+    - Maximum BLE client connections: 3 (NUM_BLE_DEVICES)
+    - 1 power meter OR cadence sensor
+    - 1 heart rate monitor
+    - 1 remote control
+    
+    **Duplicate prevention:**
+    
+    SmartSpin2k automatically removes duplicate services:
+    - Only one of each service type can be connected
+    - Newer connection replaces older for same service
+    - Implemented in `removeDuplicates()` function
+
+    **Slots in use check:**
+    
+    Each device in myBLEDevices array tracks:
+    - connectedClientID (BLE_HS_CONN_HANDLE_NONE when free)
+    - Service type flags (isPM, isHRM, isCSC, isRemote)
+    - Connection state (doConnect, isPostConnected)
+
+    <Warning>
+      If all 3 slots are full, new devices won't connect. Disconnect unused devices to free slots.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## BLE Client Loop
+
+The BLE client runs in a dedicated FreeRTOS task with:
+- **Stack size**: 6000 bytes (BLE_CLIENT_STACK)
+- **Priority**: 9
+- **Core**: 1 (pinned)
+- **Loop delay**: 101ms (BLE_CLIENT_DELAY)
+
+### Connection Flow
+
+1. **Scan**: Detect advertising devices
+2. **Filter**: Check if device supports known services
+3. **Connect**: Establish connection to device
+4. **Subscribe**: Register for notifications from characteristics
+5. **Post-connect**: Configure connection parameters
+6. **Monitor**: Watch for disconnects (timeout or explicit)
+
+### Data Flow
+
+- Notifications queued in device-specific queue (NOTIFY_DATA_QUEUE_SIZE = 25)
+- Queue holds up to 10 notifications (NOTIFY_DATA_QUEUE_LENGTH)
+- Processed in BLECommunications() every 503ms (BLE_NOTIFY_DELAY)
+
+## BLE Server Configuration
+
+### Services Advertised
+
+1. **Fitness Machine Service** (primary)
+   - Indoor Bike Data characteristic
+   - Control Point characteristic  
+   - Status characteristic
+   - Training Status characteristic
+
+2. **Cycling Power Service**
+   - Power Measurement characteristic
+   - Power Feature characteristic
+
+3. **Cycling Speed & Cadence**
+   - CSC Measurement characteristic
+   - CSC Feature characteristic
+
+4. **Device Information Service**
+   - Manufacturer Name
+   - Model Number
+   - Serial Number
+   - Firmware Version
+
+5. **Custom Characteristic**
+   - SmartSpin2k configuration access
+   - UUID documented in CustomCharacteristic.md
+
+### Connection Handling
+
+- **MTU negotiation**: Automatic
+- **Multiple clients**: Supported (training app + companion app)
+- **Write cache**: Queued writes processed sequentially
+- **Connection parameters**: Can be updated by client
+
+## Debugging BLE Issues
+
+### Enable BLE Logging
+
+Uncomment in settings.h:
+```cpp
+#define DEBUG_BLE_TX_RX
+```
+
+This logs all BLE transmissions and receptions.
+
+### Check Connection Status
+
+Monitor these runtime values:
+- `spinBLEClient.connectedPM` - Power meter connected
+- `spinBLEClient.connectedHRM` - Heart rate monitor connected  
+- `spinBLEClient.connectedCD` - Cadence sensor connected
+- `spinBLEClient.connectedRemote` - Remote control connected
+
+### BLE Log Tags
+
+- `BLE_Client` - Client connection events
+- `BLE_Common` - Shared BLE functions
+- `BLE_Server` - Server events and notifications
+- `BLE_Setup` - Initialization
+- `FTMS_SERVER` - Fitness Machine Service
+- `Custom_C` - Custom characteristic
+
+### Common Log Messages
+
+| Message | Meaning |
+|---------|----------|
+| "Client not connected for notifications" | Device disconnected during subscribe |
+| "Subscribed to [service] [char]" | Successfully registered for notifications |
+| "Aborting subscription loop: client disconnected" | Connection lost during setup |
+| "Failed to subscribe to [service]" | CCCD write failed |
+| "ERROR: Attempt to set null device!" | Invalid device reference |
+
+## Performance Optimization
+
+<Tip>
+  For best BLE performance:
+  - Keep devices within 10 feet
+  - Minimize WiFi congestion (use different channels)
+  - Reduce number of connected devices if experiencing issues
+  - Update device firmware regularly
+</Tip>
+
+### BLE vs WiFi Coexistence
+
+ESP32 shares radio between BLE and WiFi:
+- Both operate on 2.4GHz
+- Internal arbitration handles conflicts
+- Heavy WiFi traffic can impact BLE performance
+- Keep web interface usage minimal during rides
+
+## Advanced Troubleshooting
+
+### Force Reconnect All Devices
+
+Call `spinBLEClient.reconnectAllDevices()` to:
+- Disconnect all current connections
+- Clear connection state
+- Trigger new scan and reconnect
+
+Accessible via web interface or custom characteristic.
+
+### Clear Found Devices List
+
+Reset the foundDevices string in configuration to:
+- Remove stale device entries
+- Force fresh device discovery
+- Fix issues with renamed devices
+
+### Check NimBLE Stack
+
+SmartSpin2k uses NimBLE (not ESP-IDF BLE):
+- More memory efficient
+- Better performance
+- Different API than Bluedroid
+
+Ensure you're using NimBLE-compatible tools for debugging.

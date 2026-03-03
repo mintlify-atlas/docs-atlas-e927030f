@@ -1,0 +1,557 @@
+---
+title: 'Stepper Motor & Homing'
+description: 'Troubleshooting stepper motor control and homing procedures'
+icon: 'gear'
+---
+
+## Stepper Motor Configuration
+
+SmartSpin2k uses a TMC2209 (Rev 2) or TMC2208 (Rev 1) stepper driver with these default settings:
+
+- **Microstepping**: 1/4 step (4 microsteps)
+- **Peak current**: 900mA (DEFAULT_STEPPER_POWER)
+- **Hold current**: 30% of peak (HOLD_PWR_SCALER = 0.3)
+- **Speed**: 3500 steps/s (DEFAULT_STEPPER_SPEED)
+- **Acceleration**: 3000 steps/s² (STEPPER_ACCELERATION)
+- **R_SENSE**: 0.11Ω
+
+### StealthChop vs SpreadCycle
+
+**StealthChop** (default):
+- Nearly silent operation
+- Lower torque at high speeds
+- Better for most users
+- Enabled: `userConfig->setStealthChop(true)`
+
+**SpreadCycle**:
+- Higher torque
+- Audible noise
+- Better for heavy resistance bikes
+- Enabled: `userConfig->setStealthChop(false)`
+
+## Stepper Motor Movement Issues
+
+<AccordionGroup>
+  <Accordion title="Motor doesn't move at all">
+    **Systematic diagnosis:**
+
+    **1. Power check:**
+    - Verify 12V supply connected and active
+    - Check driver board LED (should be lit)
+    - Measure voltage at motor terminals
+
+    **2. Enable state:**
+    - Enable pin must be LOW for motor to run
+    - Pin goes HIGH when idle (disables motor)
+    - Auto-enable activates when cadence > 1 RPM
+    - Check: `stepper->setAutoEnable(false)` for testing
+
+    **3. Driver communication:**
+    - UART must be working (57600 baud, 8N2)
+    - PDN pin disabled for UART: `driver.pdn_disable(true)`
+    - Microstep register select: `driver.mstep_reg_select(true)`
+    - Check driver.begin() executes without error
+
+    **4. Movement commands:**
+    - Stepper receives moveTo() commands
+    - Target position different from current position
+    - Not blocked by travel limits
+    - Check logs: "Shift Blocked by stepper limits"
+
+    <Tip>
+      Enable DEBUG_STACK in settings.h to monitor task execution and catch silent failures.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Motor vibrates but doesn't turn">
+    **This indicates electrical connection but insufficient torque.**
+
+    **Common causes:**
+
+    1. **Current too low**:
+       - Default 900mA may be insufficient for some motors
+       - Increase via `userConfig->setStepperPower()`
+       - Max safe: 2000mA (TMC2225 hardware limit)
+       - Start at 1200mA and increase gradually
+
+    2. **Coil wiring incorrect**:
+       - Two coils must be wired to correct pairs
+       - Swapped coil pairs cause vibration
+       - Test: Measure resistance between wire pairs
+       - Each coil should show 2-5Ω
+
+    3. **Microstep setting wrong**:
+       - Should be 4 (1/4 step)
+       - Set in: `driver.microsteps(4)`
+       - Full-stepping requires different speed/acceleration
+
+    4. **Speed too high**:
+       - Motor can't accelerate fast enough
+       - Reduce stepperSpeed from 3500 to 2000
+       - Reduce acceleration from 3000 to 2000
+
+    **Testing:**
+    ```cpp
+    // Try these values for testing
+    updateStepperPower(1500);  // Increase current
+    updateStepperSpeed(2000);  // Reduce speed
+    ```
+  </Accordion>
+
+  <Accordion title="Motor skips steps under load">
+    **Symptoms:** Position tracking becomes inaccurate, motor "jumps" occasionally.
+
+    **Root causes:**
+
+    1. **Insufficient torque**:
+       - Load exceeds motor capability at current setting
+       - Solution: Increase stepperPower up to 2000mA
+       - Check for mechanical binding first
+
+    2. **Speed too aggressive**:
+       - Acceleration too fast for load
+       - Solution: Reduce STEPPER_ACCELERATION (try 2000)
+       - Or reduce stepperSpeed (try 2500)
+
+    3. **Thermal throttling**:
+       - Driver overheating and reducing current
+       - Check driver heatsink temperature
+       - Add cooling or reduce current
+
+    4. **Voltage sag**:
+       - Power supply can't maintain voltage under load  
+       - Measure VIN during movement
+       - Upgrade to higher current supply
+
+    <Warning>
+      Step skipping is cumulative - position error increases over time. Always investigate and fix.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Motor runs in wrong direction">
+    **Symptoms:** Shifts move opposite direction, up/down reversed.
+
+    **Software solution (preferred):**
+    
+    Change direction setting:
+    - `userConfig->setStepperDir(true)` or `false`
+    - Web interface: Settings → Stepper Direction
+    - Applies on next movement
+    - Saved to configuration
+
+    **What this does:**
+    ```cpp
+    stepper->setDirectionPin(currentBoard.dirPin, userConfig->getStepperDir());
+    ```
+
+    **Hardware solution:**
+    
+    Swap one coil pair wiring (not recommended - use software setting instead).
+
+    <Tip>
+      Also check shifterDir setting if physical buttons seem backwards.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Motor movement is jerky or rough">
+    **Symptoms:** Unsmooth motion, visible stepping, vibration.
+
+    **Optimization steps:**
+
+    1. **Enable StealthChop**:
+       - `userConfig->setStealthChop(true)`
+       - Smoothest operation mode
+       - May reduce torque slightly
+
+    2. **Adjust acceleration**:
+       - Lower acceleration = smoother start/stop
+       - Try STEPPER_ACCELERATION = 2000
+       - Trade-off: Slower response time
+
+    3. **Optimize microstepping**:
+       - Current setting: 4 (1/4 step)
+       - Could increase to 8 or 16 for smoother motion
+       - Requires speed/acceleration adjustment
+
+    4. **Speed tuning**:
+       - Avoid resonant frequencies (typically 200-800 steps/s)
+       - Test different speeds to find smooth range
+       - Default 3500 steps/s usually good
+
+    5. **Current balancing**:
+       - Too high: Excessive vibration and heat
+       - Too low: Torque ripple and cogging
+       - Find minimum current that provides adequate torque
+  </Accordion>
+
+  <Accordion title="Motor position drift over time">
+    **Symptoms:** Home position changes, limits become inaccurate.
+
+    **Causes:**
+
+    1. **Step skipping**: See "Motor skips steps" above
+    2. **No position feedback**: Stepper is open-loop control
+    3. **Mechanical slipping**: Coupling or adapter loose
+    4. **Power interruption**: Position lost on power cycle
+
+    **Solutions:**
+
+    - **Re-home periodically**: Run spindown/homing procedure
+    - **Mechanical check**: Tighten all couplings and adapters
+    - **Increase torque**: Ensure no skipping occurs
+    - **Power table**: Use saved power table to detect drift
+
+    **Position tracking:**
+    
+    SmartSpin2k tracks position in software:
+    - `stepper->getCurrentPosition()` - FastAccelStepper position
+    - `ss2k->getCurrentPosition()` - SmartSpin2k tracked position
+    - These should always match
+
+    <Tip>
+      If positions diverge, there's a software bug or step skipping. Re-home to resync.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Homing Procedures
+
+### What is Homing?
+
+Homing finds the physical travel limits of your bike's resistance knob to:
+- Prevent motor from forcing knob past end stops
+- Calibrate position for accurate ERG mode
+- Set minStep and maxStep boundaries
+- Enable safe automatic resistance control
+
+### Homing Methods
+
+SmartSpin2k supports two homing methods:
+
+1. **Sensorless Homing** (Rev 2 only, preferred)
+   - Uses TMC2209 StallGuard feature
+   - Detects when motor stalls at physical limit
+   - Automatic, no user intervention needed
+
+2. **FTMS Bike Homing** (Any revision)
+   - Uses resistance feedback from connected FTMS bike
+   - Finds min/max resistance positions
+   - Requires connected power meter with resistance reporting
+
+<AccordionGroup>
+  <Accordion title="Sensorless homing not working (Rev 2)">
+    **Requirements:**
+    - Hardware: Revision 2 board (TMC2209 driver)
+    - Firmware: Homing feature enabled
+    - Configuration: homingSensitivity set appropriately
+
+    **How it works:**
+    
+    1. Motor power reduced to 80% (PWR_SCALER_FOR_HOMING = 0.8)
+    2. Speed reduced to 1500 steps/s
+    3. Motor runs in one direction
+    4. SG_RESULT monitored continuously
+    5. When SG_RESULT drops below threshold, stall detected
+    6. Motor stops, position recorded
+
+    **Tuning sensitivity:**
+    
+    Default: 50 (DEFAULT_HOMING_SENSITIVITY)
+    - **Higher value**: More sensitive, stops earlier
+      - May stop before reaching true end stop
+      - Use if homing runs into limit too hard
+    - **Lower value**: Less sensitive, runs further
+      - May push harder into end stop
+      - Use if homing stops too soon
+
+    Adjust: `userConfig->setHomingSensitivity(value)`
+
+    **Monitoring homing:**
+    
+    Enable logging to see:
+    ```
+    Homing backward (min). Stable Threshold: 120, Sensitivity: 50
+    Homing... Current SG: 115, Baseline: 120, Target: < 70
+    Stall detected! SG dropped to 65. Threshold: 70
+    ```
+
+    **Troubleshooting:**
+    
+    - **Times out (30s)**: End stop not reached or not detected
+      - Increase stepperPower for homing
+      - Check mechanical freedom
+      - Reduce sensitivity if stopping too early
+    - **Runs into stop hard**: Sensitivity too low
+      - Increase homingSensitivity
+    - **Stops too early**: Sensitivity too high  
+      - Decrease homingSensitivity
+      - Check for mechanical resistance before end stop
+
+    <Tip>
+      Watch serial logs during homing to see SG_RESULT values and tune accordingly.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="FTMS bike homing issues">
+    **Requirements:**
+    - Connected power meter via BLE
+    - Power meter must report resistance values
+    - Bike must have known resistance range (Peloton, Echelon, etc.)
+
+    **Resistance ranges:**
+    - **Peloton**: 5-98 (MIN_PELOTON_RESISTANCE to MAX_PELOTON_RESISTANCE)
+    - **Echelon**: 5-30 (MIN_ECHELON_RESISTANCE to MAX_ECHELON_RESISTANCE)
+    - **Generic FTMS**: Reported by bike in service
+
+    **Homing process:**
+    
+    1. Back off to mid-point (25% from min)
+    2. Move to minimum resistance
+    3. Wait until resistance stable
+    4. Set position to 0
+    5. Move to maximum resistance (if both directions)
+    6. Record max position
+    7. Return to position 0
+
+    **Common failures:**
+    
+    - **"FTMS Homing timed out!"**:
+      - Resistance not changing (motor not connected to knob)
+      - Resistance stuck (mechanical issue)
+      - Timeout: 30 seconds (HOME_TIMEOUT)
+    
+    - **"Resistance shift exceeded max"**:
+      - Already at limit, trying to go further
+      - Check resistance range settings
+    
+    - **Stops at wrong position**:
+      - Resistance feedback inaccurate
+      - May need multiple homing attempts
+      - Check resistance value in logs
+
+    **Exit conditions:**
+    
+    Homing stops when:
+    - Target resistance reached: `rtConfig->resistance.getValue() == targetResistance`
+    - Maximum iterations: 600 loops
+    - Minimum travel: At least shiftStep distance moved
+    - User abort: Shift button pressed
+
+    <Tip>
+      For Peloton bikes, FTMS homing is more reliable than sensorless due to precise resistance reporting.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Homing aborted by user">
+    **How to abort:**
+    
+    Press either shift button during homing procedure.
+
+    **When abort detected:**
+    ```cpp
+    if (rtConfig->getShifterPosition() != ss2k->lastShifterPosition) {
+      SS2K_LOG(MAIN_LOG_TAG, "Homing aborted by user.");
+      stepper->forceStop();
+      setupTMCStepperDriver(true);  // Restore settings
+      return;
+    }
+    ```
+
+    **After abort:**
+    - Motor stops immediately
+    - Driver settings restored to normal
+    - Homing incomplete - limits not set
+    - Status: SpinDown_Error sent to FTMS clients
+
+    **Why abort?**
+    
+    - Homing going in wrong direction
+    - Taking too long
+    - Want to cancel and try different settings
+    - Mechanical issue detected
+
+    <Warning>
+      Aborting homing leaves device without calibrated limits. Motor may run into physical stops.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Homing sets wrong limits">
+    **Symptoms:** Motor stops before reaching end, or runs past end.
+
+    **Verification:**
+    
+    Check saved values:
+    - `userConfig->getHMin()` - Should be 0
+    - `userConfig->getHMax()` - Should be positive value
+    - `rtConfig->getMinStep()` - Runtime min
+    - `rtConfig->getMaxStep()` - Runtime max
+
+    **Causes:**
+    
+    1. **Early stall detection**:
+       - Sensitivity too high
+       - Mechanical resistance before true end
+       - Solution: Reduce homingSensitivity
+
+    2. **Late stall detection**:
+       - Sensitivity too low  
+       - Motor pushes past comfortable limit
+       - Solution: Increase homingSensitivity
+
+    3. **Inconsistent resistance**:
+       - FTMS bike reports fluctuating resistance
+       - Homing stops at wrong point
+       - Solution: Try multiple homing runs
+
+    4. **Mechanical binding**:
+       - Knob doesn't turn smoothly
+       - Stalls before true end
+       - Solution: Check mechanical installation
+
+    **Manual limit setting:**
+    
+    If automatic homing fails:
+    1. Use shift buttons to find limits manually
+    2. Note positions from web interface
+    3. Set hMin and hMax in configuration
+    4. Save configuration
+
+    <Tip>
+      Run homing twice - first run may clear any resistance, second run should be more accurate.
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Homing not supported message">
+    **Error:** "Homing not supported or stepper not initialized."
+
+    **Causes:**
+
+    1. **Revision 1 hardware**:
+       - Sensorless homing requires TMC2209 (Rev 2)
+       - Rev 1 has TMC2208/TMC2224 (no StallGuard)
+       - Solution: Use FTMS bike homing or manual limits
+
+    2. **Stepper not initialized**:
+       - `stepper` pointer is NULL
+       - Driver setup failed
+       - Solution: Check setupTMCStepperDriver() logs
+
+    3. **Board detection failed**:
+       - `currentBoard.name != r2_NAME`
+       - Wrong revision detected
+       - Solution: Check pin 34 voltage
+
+    **Workarounds for Rev 1:**
+    
+    - Connect FTMS bike and use resistance-based homing
+    - Manually set limits using shift buttons
+    - Use conservative travel limits initially
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Motor Configuration
+
+### TMC2209 Register Settings
+
+Key registers set during initialization:
+
+```cpp
+driver.pdn_disable(true);        // Enable UART
+driver.mstep_reg_select(true);   // Use register for microsteps
+driver.microsteps(4);            // 1/4 stepping
+driver.iholddelay(5);            // Hold delay
+driver.TPOWERDOWN(16);           // Power down delay
+driver.toff(5);                  // Enable driver (must be >0)
+```
+
+### Power Scaling
+
+**Current calculation:**
+- RMS current = peak current / 1.414
+- 900mA peak ≈ 636mA RMS
+- Hold current = RMS × HOLD_PWR_SCALER (0.3) ≈ 191mA
+
+**Power scaler values:**
+- Rev 1: 31 (very low current reduction)
+- Rev 2: 12 (moderate current reduction)
+
+### Speed Calculations
+
+**Stepper rotation:**
+- Full step angle: Typically 1.8° (200 steps/rev)
+- Microstepping: 4× = 800 steps/rev
+- Knob rotation: 2181.76 steps/revolution (documented)
+
+**At 3500 steps/s:**
+- Motor: 4.375 rev/s
+- Knob: ~1.6 rev/s
+- Acceleration time to full speed: ~1.2s
+
+### Position Limits
+
+**Default travel (unhomed):**
+- `DEFAULT_STEPPER_TRAVEL = 200000000`
+- Effectively unlimited (±200M steps)
+- Prevents movement protection until homed
+
+**After homing:**
+- Min: Typically 0
+- Max: Varies by bike (15000-35000 steps common)
+- Enforced in moveStepper() function
+
+## Diagnostic Tools
+
+### Enable Debug Logging
+
+Uncomment in settings.h:
+```cpp
+#define DEBUG_STACK      // Memory usage
+#define DEBUG_POWERTABLE // ERG/power tracking
+```
+
+### Monitor Stepper Status
+
+**Via serial logs (6-second interval):**
+```
+Current Pos 12450, Target Pos 12450
+```
+
+**Via web interface:**
+- Real-time position display
+- Current vs target position
+- Motor running state
+
+### Test Motor Independently
+
+```cpp
+// Simple movement test
+stepper->moveTo(1000);  // Move to position 1000
+while (stepper->isRunning()) {
+  delay(10);
+}
+// Check position
+int pos = stepper->getCurrentPosition();
+// Should be 1000 if no steps lost
+```
+
+## When to Re-Home
+
+**Mandatory re-homing:**
+- After power table reset
+- After firmware update (limits may be reset)
+- If position drift suspected
+- After mechanical adjustments
+
+**Optional re-homing:**
+- Periodically for maintenance (monthly)
+- Before important rides for accuracy
+- When ERG mode seems less accurate
+
+**Preserved between reboots:**
+- Yes - hMin and hMax saved to LittleFS
+- File: /config.txt
+- Loaded on boot if valid
+
+<Tip>
+  SmartSpin2k automatically uses saved homing data if available: "Using homing data from config file."
+</Tip>

@@ -1,122 +1,117 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "SmartSpin2k",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1a73e8",
+    "light": "#4285f4",
+    "dark": "#0d47a1"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/doudar/smartspin2k"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/doudar/smartspin2k"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "features",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Hardware",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "hardware/overview",
+              "hardware/v3-integrated-pcb",
+              "hardware/v2-through-hole",
+              "hardware/components",
+              "hardware/3d-printing",
+              "hardware/bike-compatibility"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Building",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "building/assembly-guide",
+              "building/wiring",
+              "building/mounting",
+              "building/calibration"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Firmware",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "firmware/installation",
+              "firmware/configuration",
+              "firmware/ota-updates",
+              "firmware/development"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "usage/connecting-to-zwift",
+              "usage/erg-mode",
+              "usage/power-calibration",
+              "usage/web-interface",
+              "usage/mobile-app"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/common-issues",
+              "troubleshooting/bluetooth",
+              "troubleshooting/hardware",
+              "troubleshooting/stepper-motor"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "BLE Services",
             "pages": [
-              "api-reference/introduction"
+              "api/ble-overview",
+              "api/custom-characteristic",
+              "api/ftms-service",
+              "api/cycling-power-service",
+              "api/csc-service"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Configuration",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/settings",
+              "api/power-table",
+              "api/erg-configuration"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "api/contributing",
+              "api/building-from-source",
+              "api/testing"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

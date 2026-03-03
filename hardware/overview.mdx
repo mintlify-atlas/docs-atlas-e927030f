@@ -1,0 +1,176 @@
+---
+title: Hardware Overview
+description: Overview of SmartSpin2k hardware versions - V1, V2, and V3
+---
+
+# Hardware Overview
+
+SmartSpin2k is available in multiple hardware versions, each designed for different use cases and skill levels. Choose the version that best fits your needs and capabilities.
+
+## Current Versions
+
+<Tabs>
+  <Tab title="V3 - Integrated PCB (Latest)">
+    ### V3 - Integrated PCB
+    
+    The newest and most advanced version with a fully integrated custom PCB.
+    
+    **Key Features:**
+    - Custom manufactured PCB with SMT components
+    - UART to serial driver for direct Peloton bike communication
+    - Automated manufacturing capability
+    - Rigid direct mount system
+    - "Print, Plug, and Play" - minimal soldering required
+    - 11:40 tooth gear ratio
+    
+    **Compatibility:**
+    - Peloton Bike (with serial interface)
+    - Bowflex C6
+    - Echelon Connect Sport
+    - Schwinn IC4
+    - Other bikes with 80mm+ clearance
+    
+    **Skill Level:** Beginner to Intermediate
+    
+    **Required Clearance:** Minimum 80mm between knob center and head tube
+    
+    [Learn more about V3 →](/hardware/v3-integrated-pcb)
+  </Tab>
+  
+  <Tab title="V2 - Through Hole">
+    ### V2 - Through Hole
+    
+    The DIY-friendly version with hand-solderable through-hole components.
+    
+    **Key Features:**
+    - Hand-solderable carrier board PCB
+    - Smaller, easier to print case design
+    - Multiple case options (Direct Mount, Universal, Ultra Short)
+    - Improved gear ratio over V1
+    - Easy wiring with devkit mounting
+    - 11:40 tooth gear ratio
+    
+    **Case Options:**
+    - **Direct Mount (Recommended)** - Additional stability, requires 115mm clearance (long) or 81mm (short)
+    - **Universal Mount** - Works across many bikes, requires 49mm clearance
+    - **Ultra Short Mod** - For bikes with less than 49mm clearance
+    
+    **Skill Level:** Intermediate (basic soldering required)
+    
+    **Required Clearance:** 49mm minimum (Universal), up to 115mm (Direct Mount Long)
+    
+    [Learn more about V2 →](/hardware/v2-through-hole)
+  </Tab>
+  
+  <Tab title="V1 - Archive">
+    ### V1 - Archive
+    
+    The original printable version, now archived.
+    
+    <Warning>
+      V1 is no longer recommended for new builds. The V1 folder is maintained only for printing replacement parts for existing V1 builds.
+    </Warning>
+    
+    **Limitations:**
+    - Common assets (gears, mounts, inserts) are not compatible
+    - Larger, more complex prints
+    - Less stable mounting system
+    - Requires V1-specific knob cups and adaptors
+    
+    **When to Use V1:**
+    - Only if you need replacement parts for an existing V1 build
+    
+    **Recommendation:** Build V2 or V3 instead for better performance and easier assembly.
+  </Tab>
+</Tabs>
+
+## Version Comparison
+
+| Feature | V3 Integrated | V2 Through Hole | V1 Archive |
+|---------|---------------|-----------------|------------|
+| **Manufacturing** | SMT PCB | Hand-soldered PCB | Custom wiring |
+| **Difficulty** | Beginner | Intermediate | Advanced |
+| **Peloton Serial** | Yes | No | No |
+| **Mount Type** | Direct Mount | Direct/Universal/Ultra Short | Strap Mount |
+| **Gear Ratio** | 11:40t | 11:40t | Varies |
+| **Case Size** | Compact | Multiple options | Large |
+| **Soldering** | Minimal | Basic required | Extensive |
+| **Recommended** | ✅ Yes | ✅ Yes | ❌ No |
+
+## Common Components
+
+All V2 and V3 builds share these common components:
+
+### Required 3D Printed Parts
+
+- **Gears** - 11 tooth and 40 tooth internal drive gears
+- **Inserts** - Bike-specific knob adaptors (40+ bike models supported)
+- **Knob Cup** - Retains insert and connects to internal gearbox
+- **Arm** - Connects SmartSpin2k to bike mount (V2 Direct Mount & V3 only)
+- **Bike Mount** - Attaches to head tube (V2 Direct Mount & V3 only)
+- **Shifters** - TPU shifters for manual resistance control
+
+### Electronic Components
+
+See the [Components](/hardware/components) page for detailed bills of materials.
+
+## Choosing Your Version
+
+<Accordion title="I want the easiest build with minimal soldering">
+  **Choose V3 Integrated PCB**
+  
+  The V3 version uses a manufactured PCB that arrives fully assembled. You just need to:
+  - 3D print the case and accessories
+  - Plug in the cables
+  - Mount to your bike
+  
+  Perfect for beginners or those who want a quick, reliable build.
+</Accordion>
+
+<Accordion title="I have basic soldering skills and want to save money">
+  **Choose V2 Through Hole**
+  
+  The V2 version uses readily available components that you solder yourself. Benefits:
+  - Lower cost than V3
+  - Easy hand-soldering with through-hole components
+  - Multiple case options for different bikes
+  - Well-documented and widely built by the community
+  
+  Requires a soldering iron and basic electronics experience.
+</Accordion>
+
+<Accordion title="I have a Peloton bike">
+  **Choose V3 Integrated PCB**
+  
+  Only V3 has the UART to serial driver specifically designed for direct integration with Peloton bikes. This provides:
+  - Native Peloton communication
+  - Better resistance control
+  - Direct serial interface support
+</Accordion>
+
+<Accordion title="My bike has limited clearance space">
+  **Measure your clearance first:**
+  
+  1. Measure from the back of the head tube to the center of the knob
+  2. Choose based on available space:
+     - **Less than 49mm**: V2 Ultra Short Mod
+     - **49-80mm**: V2 Universal or Direct Mount Short
+     - **80mm+**: V2 Direct Mount Long or V3
+     - **115mm+**: V2 Direct Mount Long or V3
+</Accordion>
+
+## Next Steps
+
+1. **Check bike compatibility** - See [Bike Compatibility](/hardware/bike-compatibility)
+2. **Review components needed** - See [Components & BOM](/hardware/components)
+3. **Prepare for 3D printing** - See [3D Printing Guide](/hardware/3d-printing)
+4. **Choose your version** - V3 Integrated or V2 Through Hole
+5. **Order parts** - Get your PCB and electronic components
+6. **Start building!** - Follow the build instructions in the GitHub wiki
+
+## Additional Resources
+
+- [SmartSpin2k GitHub Repository](https://github.com/doudar/SmartSpin2k)
+- [Community Facebook Group](https://www.facebook.com/groups/716297469953492/)
+- [Pre-assembled Kits](https://www.smartspin2k.com/purchase-kits)
+- [Build Instructions PDF](https://github.com/doudar/SmartSpin2k/blob/develop/SS2kR3BuildingInstructions.pdf)
